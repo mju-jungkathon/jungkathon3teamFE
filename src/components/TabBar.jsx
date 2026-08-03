@@ -1,9 +1,8 @@
 const TABS = [
   { id: 'home', label: '홈' },
-  { id: 'tracking', label: '트래킹' },
-  { id: 'vitals', label: '심박확인' },
-  { id: 'solution', label: '솔루션' },
-  { id: 'report', label: '리포트' },
+  { id: 'run', label: '러닝' },
+  { id: 'history', label: '기록' },
+  { id: 'profile', label: '프로필' },
 ]
 
 export default function TabBar({ active, onChange }) {

@@ -7,7 +7,7 @@ export default function Vitals({ onGoScan, onUseWatch }) {
     <section className="page">
       <div className="label">심박수 확인</div>
       <div className="title">심박수는 어떻게 확인할까요</div>
-      <div className="sub">워치가 있다면 워치 데이터를, 없다면 카메라로 측정해요</div>
+      <div className="sub">워치가 있다면 워치 데이터를, 없다면 손가락 측정으로 확인해요</div>
 
       <div className="tabs">
         <div className={`tab-opt ${source === 'watch' ? 'on' : ''}`} onClick={() => setSource('watch')}>워치 있어요</div>
@@ -26,9 +26,9 @@ export default function Vitals({ onGoScan, onUseWatch }) {
 
       {source === 'rppg' && (
         <div className="box-dash">
-          <div className="t">얼굴로 측정할게요</div>
-          <div className="d">카메라 앞에서 10초만 가만히 있어주세요</div>
-          <button className="btn block primary" onClick={onGoScan}>촬영 시작하기</button>
+          <div className="t">손가락으로 측정할게요</div>
+          <div className="d">후면 카메라와 플래시에 손가락을 밀착시켜 약 12초간 측정해요</div>
+          <button className="btn block primary" onClick={onGoScan}>측정 화면으로 이동</button>
         </div>
       )}
 

@@ -1,7 +1,7 @@
-export default function Home({ onStart }) {
+export default function RunStart({ onStart }) {
   return (
     <section className="page">
-      <div className="label">홈</div>
+      <div className="label">러닝</div>
       <div className="title">오늘도 뛸 준비 됐나요</div>
       <div className="sub">현재 위치 기준 UV 지수 6 · 러닝하기 좋은 시간대예요</div>
 

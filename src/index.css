@@ -138,3 +138,23 @@ body{
 .tab-box{width:16px;height:16px;border:1px solid currentColor}
 
 .foot{text-align:center;color:#888;font-size:10.5px;margin-top:18px}
+
+/* 측정 진행바 (rPPG 손가락 측정용) */
+.measure-bar{height:6px;background:var(--line-soft);margin-top:10px;overflow:hidden}
+.measure-bar i{display:block;height:100%;background:var(--line)}
+
+/* 전송 상태 태그 - 색 대신 실선/점선 테두리로 구분 */
+.status-ok{border:1px solid var(--line);padding:3px 8px;font-size:10px;color:var(--text)}
+.status-fail{border:1px dashed var(--line);padding:3px 8px;font-size:10px;color:var(--muted)}
+
+/* 기록 리스트 행 */
+.list-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.list-row:last-child{border:none}
+.list-row .lt{font-size:12px;font-weight:700}
+.list-row .ld{font-size:10.5px;color:var(--muted);margin-top:2px}
+.list-row .lv{font-size:13px;font-weight:700;text-align:right}
+
+/* 프로필 항목 */
+.profile-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:11.5px}
+.profile-row:last-child{border:none}
+.profile-row .v{color:var(--muted)}
