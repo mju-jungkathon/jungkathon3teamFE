@@ -5,6 +5,12 @@ export default function Solution({ onComplete }) {
       <div className="title">오늘의 회복 가이드</div>
       <div className="sub">러닝 데이터와 심박수를 기반으로 만들었어요</div>
 
+      <div className="result-hero">
+        <div className="rl">오늘 측정된 심박수</div>
+        <div className="rv">146</div>
+        <div className="ru">BPM</div>
+      </div>
+
       <div className="box-dash">
         <div className="d">오늘 강도 높은 4.8km 러닝에 UV 지수 6까지 겹쳤어요. 수분 보충과 가벼운 스트레칭으로 마무리하는 걸 추천해요.</div>
       </div>

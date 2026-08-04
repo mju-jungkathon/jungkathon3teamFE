@@ -32,8 +32,12 @@ export default function FingerScan({ onFinishScan }) {
 
       {stage === 'done' && (
         <>
+          <div className="result-hero">
+            <div className="rl">측정 결과 · rPPG</div>
+            <div className="rv">146</div>
+            <div className="ru">BPM</div>
+          </div>
           <div className="box">
-            <div className="t">측정 결과: 146 BPM</div>
             <div className="line-item"><span>측정 시간</span><span className="v">12초</span></div>
             <div className="line-item"><span>백엔드 전송</span><span className="v">전송 완료</span></div>
             <span className="status-ok">기록에 저장됨</span>

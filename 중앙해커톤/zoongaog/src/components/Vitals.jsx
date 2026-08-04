@@ -15,13 +15,17 @@ export default function Vitals({ onGoScan, onUseWatch }) {
       </div>
 
       {source === 'watch' && (
-        <div className="box">
-          <div className="t">워치 데이터를 불러왔어요</div>
-          <div className="line-item"><span>평균 심박수</span><span className="v">152bpm</span></div>
-          <div className="line-item"><span>최고 심박수</span><span className="v">168bpm</span></div>
-          <div className="line-item"><span>심박변이도(HRV)</span><span className="v">42ms</span></div>
-          <button className="btn block primary" onClick={onUseWatch}>이 데이터로 솔루션 받기</button>
-        </div>
+        <>
+          <div className="result-hero">
+            <div className="rl">워치 데이터 · 평균 심박수</div>
+            <div className="rv">152</div>
+            <div className="ru">BPM · 최고 168bpm</div>
+          </div>
+          <div className="box">
+            <div className="line-item"><span>심박변이도(HRV)</span><span className="v">42ms</span></div>
+            <button className="btn block primary" onClick={onUseWatch}>이 데이터로 솔루션 받기</button>
+          </div>
+        </>
       )}
 
       {source === 'rppg' && (
