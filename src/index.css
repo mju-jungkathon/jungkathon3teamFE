@@ -1,0 +1,282 @@
+/* =========================================================
+   AfterGrow — Design tokens (AfterGrow v2 / Nike Commerce DS)
+   값은 전부 Claude Design의 nike-commerce-design-system
+   tokens/*.css 에서 그대로 가져온 것이다. 임의로 바꾸지 말 것.
+   ========================================================= */
+:root{
+  /* --- color: base ramp --- */
+  --ink:#111111;
+  --canvas:#ffffff;
+  --soft-cloud:#f5f5f5;
+  --charcoal:#39393b;
+  --ash:#4b4b4d;
+  --mute:#707072;
+  --stone:#9e9ea0;
+  --hairline:#cacacb;
+  --hairline-soft:#e5e5e5;
+
+  /* --- color: semantic signal (신호용, 장식 금지) --- */
+  --sale:#d30005;      /* 심박수 · 측정 실패 · 경고 */
+  --success:#007d48;   /* 완료 · 양호 · 연결됨 */
+  --info:#1151ff;      /* 미사용(시스템 보유) */
+
+  /* --- fonts --- */
+  /* Bebas Neue는 한글 글리프가 없어 Pretendard로 폴백된다(의도된 스택) */
+  --font-display-campaign:'Bebas Neue','Pretendard Variable',Pretendard,Helvetica,Arial,sans-serif;
+  --font-display:'Inter','Pretendard Variable',Pretendard,Helvetica,Arial,sans-serif;
+  --font-text:'Inter','Pretendard Variable',Pretendard,Helvetica,Arial,sans-serif;
+
+  /* --- type scale --- */
+  --text-xl:32px; --text-lg:24px; --text-md:16px; --text-sm:14px; --text-xs:12px;
+  --weight-regular:400; --weight-medium:500;
+  --leading-display:.9; --leading-tight:1.2; --leading-body:1.5; --leading-loose:1.75;
+
+  /* --- composed type tokens --- */
+  --type-heading-xl:var(--weight-medium) var(--text-xl)/var(--leading-tight) var(--font-display);
+  --type-heading-lg:var(--weight-medium) var(--text-lg)/var(--leading-tight) var(--font-display);
+  --type-heading-md:var(--weight-medium) var(--text-md)/var(--leading-loose) var(--font-display);
+  --type-body-md:var(--weight-regular) var(--text-md)/var(--leading-body) var(--font-text);
+  --type-body-strong:var(--weight-medium) var(--text-md)/var(--leading-body) var(--font-text);
+  --type-button-lg:var(--weight-medium) var(--text-lg)/var(--leading-tight) var(--font-display);
+  --type-button-md:var(--weight-medium) var(--text-md)/var(--leading-body) var(--font-text);
+  --type-button-sm:var(--weight-medium) var(--text-sm)/var(--leading-body) var(--font-text);
+  --type-caption-md:var(--weight-medium) var(--text-sm)/var(--leading-body) var(--font-text);
+  --type-caption-sm:var(--weight-medium) var(--text-xs)/var(--leading-body) var(--font-text);
+
+  /* --- spacing (8px base) --- */
+  --space-xxs:2px; --space-xs:4px; --space-sm:8px; --space-md:12px;
+  --space-lg:18px; --space-xl:24px; --space-xxl:30px; --space-section:48px;
+
+  /* --- radius: 컨테이너는 전부 0, CTA는 30px 알약, 입력은 24px --- */
+  --radius-none:0px; --radius-sm:18px; --radius-input:24px;
+  --radius-button:30px; --radius-full:9999px;
+
+  /* --- elevation: 드롭섀도 없음. 헤어라인과 인셋 라인이 전부 --- */
+  --elevation-divider:1px solid var(--hairline);
+  --elevation-inset-bottom:inset 0 -1px 0 var(--hairline-soft);
+  --focus-halo:0 0 0 12px var(--soft-cloud);
+  --transition-press:transform 120ms ease-out,opacity 120ms ease-out;
+
+  /* --- app chrome --- */
+  --nav-height:56px;
+  --tabbar-height:72px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%}
+body{
+  font:var(--type-body-md);
+  color:var(--ink);
+  background:var(--soft-cloud);
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px 16px;
+  word-break:keep-all;
+  -webkit-font-smoothing:antialiased;
+}
+button,input{font-family:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+@keyframes agFade{from{opacity:0}to{opacity:1}}
+@keyframes agFadeOut{from{opacity:1}to{opacity:0}}
+@keyframes agSheetUp{from{transform:translateY(28px)}to{transform:translateY(0)}}
+@keyframes agSheetDown{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@keyframes agRise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* =========================================================
+   Prototype stage — 데스크톱 프레젠테이션용 폰 목업
+   ========================================================= */
+.stage{width:100%;max-width:430px}
+.lead{margin-bottom:20px;text-align:center}
+.lead .eyebrow{
+  font-family:var(--font-display-campaign);font-size:14px;letter-spacing:.14em;color:var(--mute);
+}
+.lead h1{font-family:var(--font-display-campaign);font-size:34px;line-height:1;margin-top:6px}
+.lead p{font:var(--type-caption-sm);color:var(--mute);margin-top:8px}
+.foot{font:var(--type-caption-sm);color:var(--stone);text-align:center;margin-top:18px}
+
+.device{width:390px;margin:0 auto}
+.screen{
+  width:390px;height:812px;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;background:var(--canvas);
+}
+
+/* =========================================================
+   Chrome — 헤더 / 탭바 / CTA 도크
+   ========================================================= */
+.hdr{
+  flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  height:var(--nav-height);padding:0 20px;box-shadow:var(--elevation-inset-bottom);
+}
+.hdr .wordmark{font-family:var(--font-display-campaign);font-size:24px;line-height:1;letter-spacing:.04em}
+
+.scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+.tabbar{
+  position:absolute;left:0;right:0;bottom:0;height:var(--tabbar-height);
+  display:flex;background:var(--canvas);box-shadow:inset 0 1px 0 var(--hairline-soft);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  border:none;background:none;cursor:pointer;font:var(--type-caption-sm);color:var(--mute);
+}
+.tab.on{color:var(--ink);box-shadow:inset 0 2px 0 var(--ink)}
+
+/* 하단 CTA는 스크롤 콘텐츠 위에 흰색 페이드로 얹힌다 */
+.cta-dock{
+  position:absolute;left:0;right:0;
+  padding:24px 20px 16px;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(255,255,255,0) 0%,rgba(255,255,255,.94) 40%,var(--canvas) 100%);
+}
+.cta-dock > *{pointer-events:auto}
+.cta-dock.above-tabs{bottom:var(--tabbar-height)}
+.cta-dock.at-bottom{bottom:0;padding-bottom:20px}
+
+/* =========================================================
+   Controls — Button / Badge / IconButton
+   (nike-commerce DS의 Button·Badge·IconButton 스펙 그대로)
+   ========================================================= */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--space-sm);
+  white-space:nowrap;border-radius:var(--radius-button);cursor:pointer;
+  font:var(--type-button-md);padding:16px 32px;min-height:48px;
+  background:var(--ink);color:var(--canvas);border:1px solid var(--ink);
+  transition:var(--transition-press);
+}
+.btn.lg{font:var(--type-button-lg);min-height:56px}
+.btn.sm{font:var(--type-button-sm);padding:8px 20px;min-height:40px}
+.btn.full{width:100%}
+.btn.secondary{background:var(--soft-cloud);color:var(--ink);border-color:var(--soft-cloud)}
+.btn:active{opacity:.5;transform:scale(.96)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:disabled:active{transform:none}
+
+.badge{
+  display:inline-block;white-space:nowrap;padding:4px 12px;
+  border-radius:var(--radius-button);font:var(--type-caption-sm);
+  background:var(--canvas);color:var(--ink);border:1px solid var(--hairline);
+}
+.badge.inverse{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+
+.icon-btn{
+  width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  border:none;border-radius:var(--radius-full);background:var(--soft-cloud);color:var(--ink);
+  cursor:pointer;transition:var(--transition-press);
+}
+.icon-btn.plain{background:none}
+.icon-btn:active{opacity:.5;transform:scale(.94)}
+.icon-btn svg{width:18px;height:18px}
+
+/* 눌림 상태(tap collapse)를 쓰는 커스텀 버튼 공통 */
+.press{transition:var(--transition-press)}
+.press:active{opacity:.5;transform:scale(.99)}
+
+/* =========================================================
+   Type helpers
+   ========================================================= */
+.display{font-family:var(--font-display-campaign);line-height:.9}
+.h-lg{font:var(--type-heading-lg)}
+.body{font:var(--type-body-md);color:var(--charcoal)}
+.cap{font:var(--type-caption-md);color:var(--mute)}
+.cap-sm{font:var(--type-caption-sm);color:var(--mute)}
+
+.section{padding:0 20px}
+.soft{background:var(--soft-cloud)}
+
+/* =========================================================
+   Data rows / stat grids — 카드 대신 헤어라인으로 구분한다
+   ========================================================= */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 0;border-top:1px solid var(--hairline-soft);font:var(--type-body-md);
+}
+.row .v{font:var(--type-body-strong)}
+.row .v.mute{font:var(--type-caption-md);color:var(--mute)}
+.row .v.ok{font:var(--type-caption-md);color:var(--success)}
+.row .v.bad{font:var(--type-caption-md);color:var(--sale)}
+
+.stat-grid{display:grid;gap:0}
+.stat-grid.c2{grid-template-columns:1fr 1fr}
+.stat-grid.c3{grid-template-columns:repeat(3,1fr)}
+.stat{padding:16px 0}
+.stat .k{font:var(--type-caption-sm);color:var(--mute)}
+.stat .n{font-family:var(--font-display-campaign);font-size:30px;line-height:1;margin-top:4px}
+.stat .n.xl{font-size:40px}
+.stat .n .u{font:var(--type-caption-md);color:var(--mute);margin-left:4px}
+.stat .n.hr{color:var(--sale)}
+.bordered-y{border-top:1px solid var(--hairline-soft);border-bottom:1px solid var(--hairline-soft)}
+.bordered-b{border-bottom:1px solid var(--hairline-soft)}
+
+/* =========================================================
+   Bottom sheet
+   ========================================================= */
+.sheet-backdrop{
+  position:absolute;inset:0;z-index:45;background:rgba(17,17,17,.4);
+  display:flex;align-items:flex-end;
+}
+.sheet{
+  width:100%;max-height:92%;overflow-y:auto;scrollbar-width:none;background:var(--canvas);
+}
+.sheet::-webkit-scrollbar{display:none}
+.sheet.pad{padding:24px 20px}
+.sheet-title{font-family:var(--font-display-campaign);font-size:28px;line-height:1}
+
+/* =========================================================
+   Forms
+   ========================================================= */
+.field label{display:block;font:var(--type-caption-md);color:var(--charcoal);margin-bottom:8px}
+.field input{
+  width:100%;height:48px;border:1px solid var(--hairline);border-radius:var(--radius-input);
+  padding:0 16px;font-size:16px;color:var(--ink);background:var(--canvas);outline:none;
+}
+.field input.invalid{border-color:var(--sale)}
+.field input:focus{border-color:var(--ink)}
+.field .err{font:var(--type-caption-sm);color:var(--sale);margin-top:6px}
+
+/* 선택형 타일 (측정 방식 · 온보딩 목표) */
+.pick{
+  border:1px solid var(--hairline);background:var(--canvas);color:var(--ink);
+  padding:18px 14px;text-align:left;cursor:pointer;font-family:inherit;
+  transition:var(--transition-press);
+}
+.pick .pt{font:var(--type-body-strong)}
+.pick .pd{font:var(--type-caption-sm);color:var(--mute);margin-top:6px;display:block}
+.pick.on{background:var(--ink);border-color:var(--ink);color:var(--canvas)}
+.pick.on .pd{color:var(--stone)}
+.pick:active{opacity:.5;transform:scale(.99)}
+
+/* 원형 스텝퍼 (주간 목표 횟수) */
+.step-btn{
+  width:48px;height:48px;border-radius:var(--radius-full);border:1px solid var(--hairline);
+  background:var(--canvas);color:var(--ink);font:var(--type-button-lg);cursor:pointer;
+  transition:var(--transition-press);
+}
+.step-btn:disabled{color:var(--stone);cursor:not-allowed}
+.step-btn:active{opacity:.5}
+
+/* 라디오/체크 동그라미 (약관 동의) */
+.check{
+  flex:none;width:24px;height:24px;border-radius:var(--radius-full);
+  border:1px solid var(--hairline);background:var(--canvas);color:transparent;
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+}
+.check.on{background:var(--ink);border-color:var(--ink);color:var(--canvas)}
+
+/* =========================================================
+   Route map (GPS 연동 전 — 예시 경로)
+   ========================================================= */
+.map svg{display:block;width:100%;height:auto}
+.map .cap{text-align:center;padding:10px;font:var(--type-caption-sm);color:var(--mute)}
+
+/* =========================================================
+   Responsive — 실기기에서는 목업 프레임을 벗기고 화면을 채운다
+   ========================================================= */
+@media (max-width:599px){
+  body{padding:0;align-items:stretch;justify-content:stretch}
+  .stage{max-width:none}
+  .lead,.foot{display:none}
+  .device{width:100%}
+  .screen{width:100%;height:100dvh}
+  .hdr{padding-top:env(safe-area-inset-top);height:calc(var(--nav-height) + env(safe-area-inset-top))}
+}
