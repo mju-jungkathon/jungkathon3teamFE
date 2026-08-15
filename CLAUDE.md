@@ -187,7 +187,8 @@ VITE_API_BASE_URL=
 - 백엔드 API 25개 엔드포인트 전부 구현 완료 (`docs/API.md` 참고)
 - 프론트 디자인: Claude Design `AfterGrow v2` 임포트 완료 (v1 다크 테마는 폐기)
 - `DESIGN.md`: 작성 완료 — 디자인 관련 판단은 여기를 소스 오브 트루스로 삼을 것
-- API 연동: 미착수 — 다음 작업
+- API 연동: `src/api/` 클라이언트 세팅 완료 (`client.js` 공통 껍데기·토큰·refresh 재시도,
+  `endpoints.js` 25개 함수). 화면 컴포넌트 배선은 미착수 — 다음 작업
 - PWA: 완료 (`vite-plugin-pwa`, 매니페스트, 아이콘, iOS 메타 태그)
 
 ## 코드 컨벤션
