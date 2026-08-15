@@ -19,6 +19,7 @@
 ## 실행 방법
 
 ```bash
+cp .env.example .env.local   # 백엔드 주소 채우기 (커밋 금지)
 npm install
 npm run dev
 npm test        # node 내장 테스트 러너 (src/**/*.test.mjs)
