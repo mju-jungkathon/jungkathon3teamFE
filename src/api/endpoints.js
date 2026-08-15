@@ -1,0 +1,96 @@
+// docs/API.md 25개 엔드포인트 전부. 응답은 껍데기 벗긴 data가 그대로 나온다.
+import { api, request, setTokens, localDateTime } from './client.js'
+
+// --- 1. 인증 ---
+export const signup = (email, password, nickname) =>
+  api.post('/auth/signup', { email, password, nickname }, { auth: false })
+
+export async function login(email, password) {
+  const t = await request('POST', '/auth/login', { body: { email, password }, auth: false })
+  setTokens(t)
+  return t
+}
+
+export async function logout() {
+  try {
+    await api.post('/auth/logout') // 인증 필요 — 토큰 지우기 전에 호출
+  } finally {
+    setTokens(null)
+  }
+}
+
+// --- 2. 홈 ---
+export const getHome = () => api.get('/home')
+
+// --- 3. 러닝 세션 ---
+export const getPrepare = (lat, lng) => api.get('/running-sessions/prepare', { lat, lng })
+export const startStretching = (type = 'PRE_RUN') => api.post('/stretching-sessions', { type })
+
+export const startRunning = (lat, lng, uvIndexAtStart) =>
+  api.post('/running-sessions', {
+    startedAt: localDateTime(),
+    location: { lat, lng },
+    uvIndexAtStart,
+  })
+
+// distanceKm/intensity를 실어 보내면 서버 스냅샷도 같이 갱신된다.
+export const getLive = (sessionId, distanceKm, intensity) =>
+  api.get(`/running-sessions/${sessionId}/live`, { distanceKm, intensity })
+
+// idempotent — 중복 호출해도 안전.
+export const endRunning = (sessionId, { durationSec, distanceKm, intensity }) =>
+  api.post(`/running-sessions/${sessionId}/end`, {
+    endedAt: localDateTime(),
+    durationSec,
+    distanceKm,
+    intensity,
+  })
+
+// --- 4. 심박수 ---
+// 선택값은 저장되지 않는다. 응답의 nextStep만 화면 분기에 쓸 것.
+export const selectHeartRateSource = (sessionId, heartRateSource) =>
+  api.post(`/running-sessions/${sessionId}/heart-rate/select-source`, { heartRateSource })
+
+// 웹에서는 HealthKit 접근 불가 — 워치 화면은 목업 유지(CLAUDE.md 참고).
+export const uploadWatchHeartRate = (runningSessionId, { avgBpm, maxBpm, hrvMs }) =>
+  api.post('/integrations/apple-health/heart-rate', {
+    runningSessionId,
+    avgBpm,
+    maxBpm,
+    hrvMs,
+    syncedAt: localDateTime(),
+  })
+export const linkAppleHealth = (linked) => api.post('/integrations/apple-health/link', { linked })
+
+export const getRppgGuide = () => api.get('/heart-rate-measurements/rppg/guide')
+export const startRppg = (runningSessionId) =>
+  api.post('/heart-rate-measurements/rppg/start', { runningSessionId })
+
+// rppgSessionId는 1회용(재제출 시 404). signalQuality:'POOR'도 201이며 syncStatus:'FAILED'로 온다.
+export const submitRppg = (rppgSessionId, { avgBpm, maxBpm, hrvMs, signalQuality }) =>
+  api.post(`/heart-rate-measurements/rppg/${rppgSessionId}/result`, {
+    avgBpm,
+    maxBpm,
+    hrvMs,
+    measuredAt: localDateTime(),
+    signalQuality,
+  })
+
+export const getMeasurements = (range = '30d') => api.get('/heart-rate-measurements', { range })
+export const retryMeasurement = (measurementId) =>
+  api.post(`/heart-rate-measurements/${measurementId}/retry`)
+
+// --- 5. 회복 가이드 ---
+// idempotent. complete 전에 반드시 이걸 먼저 호출해야 한다(안 하면 404).
+export const createRecoveryGuide = (sessionId) =>
+  api.post(`/running-sessions/${sessionId}/recovery-guide`)
+export const startCooldownTimer = (guideId) =>
+  api.post(`/recovery-guides/${guideId}/cooldown-timer/start`)
+export const completeRunning = (sessionId) => api.post(`/running-sessions/${sessionId}/complete`)
+
+// --- 6. 프로필 ---
+export const getProfile = () => api.get('/users/me/profile')
+export const updateGoal = (goal) => api.patch('/users/me/goal', goal)
+export const getIntegrations = () => api.get('/users/me/integrations')
+export const updateNotifications = (notifications) =>
+  api.patch('/users/me/notifications', notifications)
