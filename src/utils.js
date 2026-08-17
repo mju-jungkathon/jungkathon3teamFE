@@ -8,6 +8,25 @@ export function fmtPace(sec, km) {
   return Math.floor(spk / 60) + "'" + String(Math.round(spk % 60)).padStart(2, '0') + '"'
 }
 
+// 두 좌표 사이 거리(km). GPS 트래킹 중 거리 누적용.
+export function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLng = (lng2 - lng1) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+// ponytail: 페이스 임계값은 대략치(러닝 강도 산정 기준이 API 명세에 없음) — 필요시 조정.
+export function intensityFromPace(secPerKm) {
+  if (!secPerKm || secPerKm <= 0) return 'MODERATE'
+  if (secPerKm <= 330) return 'HIGH'
+  if (secPerKm <= 420) return 'MODERATE'
+  return 'LOW'
+}
+
 export function uvBand(uv) {
   if (uv <= 2) return '낮음'
   if (uv <= 5) return '보통'

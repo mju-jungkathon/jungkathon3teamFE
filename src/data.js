@@ -14,8 +14,6 @@ export const ROUTINE = [
   { id: 3, title: '가벼운 제자리 걷기', desc: '천천히 1분, 심박수를 서서히 올려요' },
 ]
 
-export const AVG_SPEED_MPS = 2.8
-
 export const PATH_A =
   'M62,146 C40,110 42,72 82,50 C122,28 182,28 220,54 C258,79 258,120 228,143 C198,165 150,172 110,162 C86,155 72,152 62,146 Z'
 export const PATH_B =

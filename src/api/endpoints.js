@@ -33,6 +33,9 @@ export const startRunning = (lat, lng, uvIndexAtStart) =>
     uvIndexAtStart,
   })
 
+// 좀비 IN_PROGRESS 세션(E4090) 복구용 — 목록에서 진행 중 세션을 찾아 강제 종료할 때 쓴다.
+export const listRunningSessions = (range = '30d') => api.get('/running-sessions', { range })
+
 // distanceKm/intensity를 실어 보내면 서버 스냅샷도 같이 갱신된다.
 export const getLive = (sessionId, distanceKm, intensity) =>
   api.get(`/running-sessions/${sessionId}/live`, { distanceKm, intensity })

@@ -1,6 +1,6 @@
 import RingGauge from './RingGauge.jsx'
 import { ChevronRight } from './Icons.jsx'
-import { UV_BY_HOUR, NOW_HOUR_LABEL, AVG_SPEED_MPS } from '../data.js'
+import { UV_BY_HOUR, NOW_HOUR_LABEL } from '../data.js'
 import { fmtElapsed } from '../utils.js'
 
 const UV_NOW = 6
@@ -10,7 +10,7 @@ const WEEK_RANGE = '8/10 - 8/16'
 export default function Home({ goal, run, onStartRun, onGoHistory }) {
   const doneCount = Math.min(3, goal.freq)
   const hasSession = run.step !== 'start'
-  const distanceKm = ((run.elapsed * AVG_SPEED_MPS) / 1000).toFixed(2)
+  const distanceKm = run.distanceKm.toFixed(2)
 
   return (
     <>
