@@ -36,20 +36,27 @@ export default function App() {
 
   const goRunStep = (step) => setRunStep(step)
 
+  const logout = () => {
+    setLoggedIn(false)
+    setActiveTab('home')
+    setRunOpen(false)
+  }
+
   const RunScreen = RUN_STEPS[runStep]
 
   return (
     <div className="stage">
       <div className="lead">
-        <h1>AURA — 와이어프레임</h1>
-        <p>로그인 → 홈 → (러닝은 전체화면으로 전환) → 기록 → 프로필. 디자인 요소 없음, 배치 확인용.</p>
+        <div className="eyebrow">AURA Prototype</div>
+        <h1>러닝 중 심박수를 재고, 회복을 처방받다</h1>
+        <p>로그인 → 홈 → 러닝(전체화면) → 기록 → 프로필. Claude 디자인 시스템 적용, 클릭형 팝업 전부 동작합니다.</p>
       </div>
 
       <div className="device">
         <div className="screen">
           <div className="statusbar">
             <span>9:41</span>
-            <span>상태바 자리</span>
+            <span>AURA</span>
           </div>
 
           <div className="body" ref={bodyRef}>
@@ -59,7 +66,7 @@ export default function App() {
               <>
                 {activeTab === 'home' && <Home onGoRun={openRun} onGoHistory={() => goTab('history')} />}
                 {activeTab === 'history' && <History />}
-                {activeTab === 'profile' && <Profile />}
+                {activeTab === 'profile' && <Profile onLogout={logout} />}
               </>
             )}
           </div>
@@ -70,7 +77,11 @@ export default function App() {
             <div className="run-overlay">
               <div className="run-overlay-top">
                 <span className="label">러닝 진행</span>
-                <span className="x" onClick={() => closeRun('home')}>닫기 ✕</span>
+                <button className="icon-btn" onClick={() => closeRun('home')} aria-label="닫기">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
               </div>
               <div className="run-overlay-body">
                 <RunScreen

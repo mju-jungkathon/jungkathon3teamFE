@@ -11,8 +11,8 @@ export default function FingerScan({ onFinishScan }) {
 
       {stage === 'idle' && (
         <>
-          <div className="box-dash" style={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 12 }}>
-            카메라 미리보기 · 플래시 꺼짐
+          <div className="cam-preview">
+            <span className="dot" /> 카메라 미리보기 · 플래시 꺼짐
           </div>
           <button className="btn block primary" onClick={() => setStage('measuring')}>측정 시작</button>
         </>
@@ -20,8 +20,8 @@ export default function FingerScan({ onFinishScan }) {
 
       {stage === 'measuring' && (
         <>
-          <div className="box-dash" style={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 12 }}>
-            카메라 미리보기 · 플래시 켜짐
+          <div className="cam-preview flash-on">
+            <span className="dot" /> 카메라 미리보기 · 플래시 켜짐
           </div>
           <div className="measure-bar"><i style={{ width: '68%' }}></i></div>
           <div className="sub" style={{ marginTop: 6 }}>8초 남음 · 프레임 초당 20회 수집 중</div>
@@ -43,7 +43,7 @@ export default function FingerScan({ onFinishScan }) {
             <span className="status-ok">기록에 저장됨</span>
           </div>
           <div className="sub" style={{ marginTop: 10 }}>
-            신호가 충분하지 않을 경우 "신호가 충분하지 않습니다. 손가락 밀착을 확인하고 다시 시도해주세요." 안내와 함께 재측정을 요청해요.
+            신호가 충분하지 않을 경우 손가락 밀착을 확인하고 다시 시도해달라는 안내와 함께 재측정을 요청해요.
           </div>
           <button className="btn block primary" onClick={onFinishScan}>솔루션 확인하기</button>
         </>
