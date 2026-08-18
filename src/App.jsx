@@ -165,7 +165,7 @@ export default function App() {
     return (
       <>
         {tab === 'home' && (
-          <Home goal={goal} run={run} onStartRun={() => setOverlay(true)} onGoHistory={() => setTab('history')} />
+          <Home goal={goal} run={run} overlay={overlay} onStartRun={() => setOverlay(true)} onGoHistory={() => setTab('history')} />
         )}
         {tab === 'history' && <History />}
         {tab === 'profile' && <Profile user={user} goal={goal} onSaveGoal={setGoal} onLogout={logout} />}
