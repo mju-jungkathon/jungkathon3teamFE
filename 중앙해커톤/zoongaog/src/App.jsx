@@ -9,7 +9,6 @@ import Solution from './components/Solution.jsx'
 import History from './components/History.jsx'
 import Profile from './components/Profile.jsx'
 import TabBar from './components/TabBar.jsx'
-import React, { useState } from 'react';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
