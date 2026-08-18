@@ -1,11 +1,15 @@
 import RingGauge from './RingGauge.jsx'
 import { selectHeartRateSource } from '../api/endpoints.js'
 
+// 웹은 HealthKit에 접근할 수 없어 워치 데이터는 목업으로 유지한다(CLAUDE.md 참고).
+// 서버에는 안 올리지만, 화면(Solution 등)에서 계속 같은 값을 보여주도록 run.scanResult에 심어둔다.
+const WATCH_MOCK = { avgBpm: 152, maxBpm: 168, hrvMs: 42 }
+
 export default function Vitals({ run, setRun }) {
   // nextStep은 WATCH→FETCH_APPLE_HEALTH, RPPG→RPPG_GUIDE로 고정이라 화면 분기는 그대로 로컬에서 하고,
   // 이 호출은 서버 쪽 흐름 기록용이라 실패해도 로컬 분기를 막지 않는다(선택값 자체는 저장 안 됨).
   const pick = (source) => () => {
-    setRun((r) => ({ ...r, source }))
+    setRun((r) => ({ ...r, source, scanResult: source === 'watch' ? WATCH_MOCK : null }))
     selectHeartRateSource(run.sessionId, source.toUpperCase()).catch(() => {})
   }
 
@@ -31,11 +35,11 @@ export default function Vitals({ run, setRun }) {
         <div style={{ marginTop: 22 }}>
           <div className="soft" style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             <div className="cap-sm">워치 데이터 · 평균 심박수</div>
-            <RingGauge size={160} outerPct={0.55} innerPct={0.75} value={152} label="152 BPM" />
-            <div className="cap" style={{ color: 'var(--charcoal)' }}>BPM · 최고 168</div>
+            <RingGauge size={160} outerPct={0.55} innerPct={0.75} value={WATCH_MOCK.avgBpm} label={`${WATCH_MOCK.avgBpm} BPM`} />
+            <div className="cap" style={{ color: 'var(--charcoal)' }}>BPM · 최고 {WATCH_MOCK.maxBpm}</div>
           </div>
           <div className="row" style={{ borderTop: 'none', borderBottom: '1px solid var(--hairline-soft)' }}>
-            심박변이도(HRV)<span className="v">42ms</span>
+            심박변이도(HRV)<span className="v">{WATCH_MOCK.hrvMs}ms</span>
           </div>
           <div className="row" style={{ borderTop: 'none' }}>UV 노출<span className="v">지수 6 · 38분</span></div>
         </div>
