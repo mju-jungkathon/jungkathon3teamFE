@@ -1,5 +1,5 @@
 import RingGauge from './RingGauge.jsx'
-import { selectHeartRateSource } from '../api/endpoints.js'
+import { selectHeartRateSource, uploadWatchHeartRate } from '../api/endpoints.js'
 
 // 웹은 HealthKit에 접근할 수 없어 워치 데이터는 목업으로 유지한다(CLAUDE.md 참고).
 // 서버에는 안 올리지만, 화면(Solution 등)에서 계속 같은 값을 보여주도록 run.scanResult에 심어둔다.
@@ -11,6 +11,8 @@ export default function Vitals({ run, setRun }) {
   const pick = (source) => () => {
     setRun((r) => ({ ...r, source, scanResult: source === 'watch' ? WATCH_MOCK : null }))
     selectHeartRateSource(run.sessionId, source.toUpperCase()).catch(() => {})
+    // 기록 화면에서도 값이 남아있도록 목업을 실제 측정 기록으로 서버에 남긴다(워치 선택 시에만).
+    if (source === 'watch') uploadWatchHeartRate(run.sessionId, WATCH_MOCK).catch(() => {})
   }
 
   return (
