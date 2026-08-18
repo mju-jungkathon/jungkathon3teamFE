@@ -6,8 +6,8 @@ import History from './components/History.jsx'
 import Profile from './components/Profile.jsx'
 import RunOverlay from './components/RunOverlay.jsx'
 import TabBar from './components/TabBar.jsx'
-import { logout as logoutApi, getPrepare, getLive } from './api/endpoints.js'
-import { haversineKm, intensityFromPace } from './utils.js'
+import { logout as logoutApi, getPrepare, getLive, getUvForecast } from './api/endpoints.js'
+import { haversineKm, intensityFromPace, currentHourBucket, uvBand } from './utils.js'
 import { reverseGeocode } from './kakao.js'
 
 export const INITIAL_RUN = {
@@ -80,13 +80,24 @@ export default function App() {
             r.step === 'tracking' && r.lat != null
               ? r.distanceKm + haversineKm(r.lat, r.lng, lat, lng)
               : r.distanceKm
-          const route = r.step === 'tracking' ? [...r.route, { lat, lng }] : r.route
+          const route = r.step === 'tracking' ? [...r.route, { lat, lng, t: r.elapsed }] : r.route
           return { ...r, lat, lng, distanceKm, route }
         })
         if (!prepared) {
           prepared = true
+          // prepare의 uvIndex 대신 /weather/uv-forecast의 "지금" 버킷을 진짜 현재 UV로 쓴다.
+          // 두 요청이 어느 순서로 끝나든 맞물리도록 override를 클로저에 들고 있다가 나중 쪽에서 병합한다.
+          let uvOverride = null
+          getUvForecast(lat, lng)
+            .then((d) => {
+              const bucket = currentHourBucket(d.hourly)
+              if (!bucket) return
+              uvOverride = { uvIndex: bucket.uv, uvLevel: uvBand(bucket.uv), goodTimeToRun: bucket.uv < 7 }
+              setRun((r) => (r.prepare ? { ...r, prepare: { ...r.prepare, ...uvOverride } } : r))
+            })
+            .catch(() => {}) // 실패하면 prepare의 uvIndex 그대로 폴백
           getPrepare(lat, lng)
-            .then((prepare) => setRun((r) => ({ ...r, prepare })))
+            .then((prepare) => setRun((r) => ({ ...r, prepare: uvOverride ? { ...prepare, ...uvOverride } : prepare })))
             .catch((err) => setRun((r) => ({ ...r, error: err.message })))
           reverseGeocode(lat, lng)
             .then((locationLabel) => locationLabel && setRun((r) => ({ ...r, locationLabel })))

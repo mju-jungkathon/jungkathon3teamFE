@@ -2,18 +2,11 @@ import { useEffect, useState } from 'react'
 import RingGauge from './RingGauge.jsx'
 import { ChevronRight } from './Icons.jsx'
 import { UV_BY_HOUR, NOW_HOUR_LABEL } from '../data.js'
-import { fmtElapsed, fmtTodayLabel, fmtClock } from '../utils.js'
+import { fmtElapsed, fmtTodayLabel, fmtClock, currentHourBucket } from '../utils.js'
 import { getHome, getUvForecast } from '../api/endpoints.js'
 import { reverseGeocode } from '../kakao.js'
 
 const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
-
-function currentHourBucket(hourly) {
-  if (!hourly?.length) return null
-  const h = new Date().getHours()
-  const key = String(Math.floor(h / 2) * 2).padStart(2, '0')
-  return hourly.find((x) => x.hour === key) || hourly[hourly.length - 1]
-}
 
 const HOUR_BUCKET_STEP = 2
 
