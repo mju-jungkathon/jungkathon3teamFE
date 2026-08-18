@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import Login from './components/Login.jsx'
 import Home from './components/Home.jsx'
 import RunStart from './components/RunStart.jsx'
 import Tracking from './components/Tracking.jsx'
@@ -6,18 +7,18 @@ import Vitals from './components/Vitals.jsx'
 import FingerScan from './components/FingerScan.jsx'
 import Solution from './components/Solution.jsx'
 import History from './components/History.jsx'
+import Profile from './components/Profile.jsx'
 import TabBar from './components/TabBar.jsx'
-import LoginPage from './pages/LoginPage'
-import SignupPage from './pages/SignupPage'
-import ProfilePage from './pages/ProfilePage'
+import SignupPage from './pages/SignupPage.jsx'
 
 const RUN_STEPS = { start: RunStart, tracking: Tracking, vitals: Vitals, scan: FingerScan, solution: Solution }
 
 export default function App() {
+  const [loggedIn, setLoggedIn] = useState(false)
   const [activeTab, setActiveTab] = useState('home')
   const [runOpen, setRunOpen] = useState(false)
   const [runStep, setRunStep] = useState('start')
-  const [currentPage, setCurrentPage] = useState('login')
+  const [isSignup, setIsSignup] = useState(false)
   const bodyRef = useRef(null)
 
   const goTab = (id) => {
@@ -38,19 +39,9 @@ export default function App() {
   const goRunStep = (step) => setRunStep(step)
 
   const logout = () => {
-    setCurrentPage('login')
+    setLoggedIn(false)
     setActiveTab('home')
     setRunOpen(false)
-  }
-
-  // 로그인 성공 시 메인 화면(main)으로 전환
-  const handleLoginNavigate = (targetPage) => {
-    if (targetPage === 'profile' || targetPage === 'main') {
-      setCurrentPage('main')
-      setActiveTab('home')
-    } else {
-      setCurrentPage(targetPage)
-    }
   }
 
   const RunScreen = RUN_STEPS[runStep]
@@ -71,31 +62,27 @@ export default function App() {
           </div>
 
           <div className="body" ref={bodyRef}>
-            {/* 1. 로그인 화면 */}
-            {currentPage === 'login' && (
-              <LoginPage onNavigate={handleLoginNavigate} />
-            )}
-
-            {/* 2. 회원가입 화면 */}
-            {currentPage === 'signup' && (
-              <SignupPage onNavigate={setCurrentPage} />
-            )}
-
-            {/* 3. 로그인 성공 후 보여줄 메인 프로토타입 화면 */}
-            {currentPage === 'main' && (
+            {!loggedIn ? (
+              isSignup ? (
+                <SignupPage onNavigate={() => setIsSignup(false)} />
+              ) : (
+                <Login 
+                  onAuth={() => setLoggedIn(true)} 
+                  onGoSignup={() => setIsSignup(true)} 
+                />
+              )
+            ) : (
               <>
                 {activeTab === 'home' && <Home onGoRun={openRun} onGoHistory={() => goTab('history')} />}
                 {activeTab === 'history' && <History />}
-                {activeTab === 'profile' && <ProfilePage onNavigate={setCurrentPage} onLogout={logout} />}
+                {activeTab === 'profile' && <Profile onLogout={logout} />}
               </>
             )}
           </div>
 
-          {/* 메인 화면일 때만 하단 탭바 표시 */}
-          {currentPage === 'main' && <TabBar active={activeTab} onChange={goTab} />}
+          {loggedIn && <TabBar active={activeTab} onChange={goTab} />}
 
-          {/* 메인 화면일 때만 러닝 오버레이 표시 */}
-          {currentPage === 'main' && runOpen && (
+          {loggedIn && runOpen && (
             <div className="run-overlay">
               <div className="run-overlay-top">
                 <span className="label">러닝 진행</span>
