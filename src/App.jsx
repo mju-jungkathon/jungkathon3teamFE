@@ -213,7 +213,7 @@ export default function App() {
         <div className="screen">{screen()}</div>
       </div>
 
-      <div className="foot">데스크톱에서는 폰 목업으로, 실제 모바일에서는 화면 전체로 표시됩니다.</div>
+      <div className="foot">데스크톱에서는 폰 목업으로, 실제 모바일에서는 화면 전체로 표시됩니다</div>
     </div>
   )
 }
