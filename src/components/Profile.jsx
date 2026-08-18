@@ -75,7 +75,6 @@ export default function Profile({ user, goal, onSaveGoal, onLogout }) {
   }, [])
 
   const name = profile?.nickname?.trim() || user.nickname?.trim() || '김러너'
-  const email = user.email?.trim() || 'runner.kim@aftergrow.kr'
 
   // 서버에 목표가 아직 없으면(goalType null) 온보딩 때 고른 로컬 goal로 폴백
   const displayGoal = profile?.goal?.goalType
@@ -140,7 +139,6 @@ export default function Profile({ user, goal, onSaveGoal, onLogout }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="display" style={{ fontSize: 34 }}>{name}</div>
-            <div className="cap" style={{ color: 'var(--charcoal)', marginTop: 8 }}>{email}</div>
           </div>
         </div>
 
