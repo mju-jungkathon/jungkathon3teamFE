@@ -3,7 +3,7 @@ import Sheet from './Sheet.jsx'
 import RunMap from './RunMap.jsx'
 import { ChevronLeft, ChevronRight, XIcon } from './Icons.jsx'
 import { WEEKDAYS } from '../data.js'
-import { monthGrid, fmtPace, fmtClock, fmtDurationKor, uvBand, routeToSvgPath } from '../utils.js'
+import { monthGrid, fmtPace, fmtClock, fmtDurationKor, uvBand, routeToSvgPath, isZombieSession } from '../utils.js'
 import { getRunningSessions, getRunningSessionDetail, createRecoveryGuide } from '../api/endpoints.js'
 
 const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
@@ -29,7 +29,7 @@ export default function History() {
       .then((d) => {
         // E4090(이미 진행 중인 세션) 충돌을 풀려고 앱이 자동으로 강제 종료한 좀비 세션(distanceKm 0,
         // COMPLETED 아님)은 사용자가 실제로 뛴 기록이 아니므로 기록 화면에서 제외한다.
-        const records = (d.records || []).filter((r) => !(r.distanceKm === 0 && r.status !== 'COMPLETED'))
+        const records = (d.records || []).filter((r) => !isZombieSession(r))
         if (!cancelled) setSessions(records)
       })
       .catch((err) => { if (!cancelled) setListErr(err.message || '기록을 불러오지 못했어요') })

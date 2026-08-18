@@ -115,6 +115,10 @@ export const completeRunning = (sessionId) => api.post(`/running-sessions/${sess
 export const getProfile = () => api.get('/users/me/profile')
 export const updateGoal = (goal) => api.patch('/users/me/goal', goal)
 export const getIntegrations = () => api.get('/users/me/integrations')
+// 서버 값은 "제어"가 아니라 "표시"용 — 브라우저에서 실제 권한을 확인한 결과를 여기로 동기화한다.
+export const updateIntegrations = (integrations) => api.patch('/users/me/integrations', integrations)
+// 되돌릴 수 없음 — 계정과 러닝 세션·측정·회복가이드가 전부 삭제된다(DB ON DELETE CASCADE).
+export const withdrawAccount = (password) => api.delete('/users/me', { password })
 export const updateNotifications = (notifications) =>
   api.patch('/users/me/notifications', notifications)
 

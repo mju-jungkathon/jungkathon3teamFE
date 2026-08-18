@@ -194,7 +194,7 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
           </div>
 
           <div className="stat-grid c3 bordered-y">
-            <div className="stat"><div className="k">누적 거리</div><div className="n" style={{ fontSize: 26 }}>{home?.weeklySummary?.totalDistanceKm ?? 0}<span style={{ fontSize: 14 }}>km</span></div></div>
+            <div className="stat"><div className="k">누적 거리</div><div className="n" style={{ fontSize: 26 }}>{(home?.weeklySummary?.totalDistanceKm ?? 0).toFixed(2)}<span style={{ fontSize: 14 }}>km</span></div></div>
             <div className="stat"><div className="k">평균 심박</div><div className="n hr" style={{ fontSize: 26 }}>{home?.weeklySummary?.avgBpm || '-'}</div></div>
             <div className="stat"><div className="k">누적 UV</div><div className="n" style={{ fontSize: 26 }}>{home?.weeklySummary?.cumulativeUvLevel || '-'}</div></div>
           </div>
