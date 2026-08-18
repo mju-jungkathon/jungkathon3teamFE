@@ -40,6 +40,17 @@ export const GOAL_TYPES = [
   ['스트레스 해소', '가볍게 달리며 회복'],
 ]
 
+// 서버 goalType enum(FITNESS 등) ↔ 화면에 쓰는 한글 라벨 매핑.
+export const GOAL_TYPE_TO_ENUM = {
+  '체력 증진': 'FITNESS',
+  '체중 감량': 'WEIGHT_LOSS',
+  '완주 훈련': 'RACE_TRAINING',
+  '스트레스 해소': 'STRESS_RELIEF',
+}
+export const GOAL_TYPE_FROM_ENUM = Object.fromEntries(
+  Object.entries(GOAL_TYPE_TO_ENUM).map(([label, code]) => [code, label]),
+)
+
 export const TERMS = [
   {
     key: 'terms', required: true, label: '[필수] 서비스 이용약관', body: [

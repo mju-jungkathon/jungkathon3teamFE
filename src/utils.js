@@ -66,6 +66,32 @@ export function fmtDurationKor(sec) {
   return s > 0 ? `${m}분 ${s}초` : `${m}분`
 }
 
+// E4090 충돌 정리로 자동 종료된 좀비 세션(거리 0·미완료)인지 — 실제 러닝 기록이 아니다.
+export function isZombieSession(r) {
+  return r.distanceKm === 0 && r.status !== 'COMPLETED'
+}
+
+// 이번 주부터 거슬러 몇 주 연속으로 뛰었는지(월요일 시작 주 기준).
+export function weeklyStreak(sessions) {
+  if (!sessions?.length) return 0
+  const weekStart = (iso) => {
+    const d = new Date(iso)
+    const mondayOffset = (d.getDay() + 6) % 7
+    d.setHours(0, 0, 0, 0)
+    d.setDate(d.getDate() - mondayOffset)
+    return d.getTime()
+  }
+  const weeksWithRun = new Set(sessions.map((s) => weekStart(s.startedAt)))
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+  let streak = 0
+  let cursor = weekStart(new Date())
+  while (weeksWithRun.has(cursor)) {
+    streak++
+    cursor -= WEEK_MS
+  }
+  return streak
+}
+
 // 오늘 날짜를 "8월 15일 토요일" 형식으로
 export function fmtTodayLabel(d = new Date()) {
   const days = ['일', '월', '화', '수', '목', '금', '토']

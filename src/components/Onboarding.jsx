@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { GOAL_TYPES } from '../data.js'
+import { GOAL_TYPES, GOAL_TYPE_TO_ENUM } from '../data.js'
+import { updateGoal } from '../api/endpoints.js'
 
 const freqHint = (n) =>
   n <= 2 ? '가볍게 시작하는 페이스' : n <= 4 ? '가장 많은 러너가 선택하는 빈도' : '회복 관리가 특히 중요한 빈도'
@@ -55,7 +56,14 @@ export default function Onboarding({ nickname, onDone }) {
         </div>
 
         <div>
-          <button className="btn lg full" disabled={!type} onClick={() => onDone(type, freq)}>
+          <button
+            className="btn lg full"
+            disabled={!type}
+            onClick={() => {
+              updateGoal({ goalType: GOAL_TYPE_TO_ENUM[type], weeklyRunGoal: freq }).catch(() => {})
+              onDone(type, freq)
+            }}
+          >
             {type ? '시작하기' : '목적을 선택해주세요'}
           </button>
           <div className="cap-sm" style={{ textAlign: 'center', marginTop: 12 }}>프로필에서 언제든 바꿀 수 있어요</div>
