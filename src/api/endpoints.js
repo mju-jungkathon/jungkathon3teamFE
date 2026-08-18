@@ -54,13 +54,14 @@ export const listRunningSessions = (range = '30d') => api.get('/running-sessions
 export const getLive = (sessionId, distanceKm, intensity) =>
   api.get(`/running-sessions/${sessionId}/live`, { distanceKm, intensity })
 
-// idempotent — 중복 호출해도 안전.
-export const endRunning = (sessionId, { durationSec, distanceKm, intensity }) =>
+// idempotent — 중복 호출해도 안전. routePath(선택, 최대 10,000점)는 History 상세 지도용.
+export const endRunning = (sessionId, { durationSec, distanceKm, intensity, routePath }) =>
   api.post(`/running-sessions/${sessionId}/end`, {
     endedAt: localDateTime(),
     durationSec,
     distanceKm,
     intensity,
+    ...(routePath?.length ? { routePath } : {}),
   })
 
 // --- 4. 심박수 ---

@@ -34,6 +34,14 @@ export function uvBand(uv) {
   return '매우 높음'
 }
 
+// /weather/uv-forecast의 2시간 단위 hourly 배열에서 "지금"에 해당하는 버킷을 찾는다
+export function currentHourBucket(hourly) {
+  if (!hourly?.length) return null
+  const h = new Date().getHours()
+  const key = String(Math.floor(h / 2) * 2).padStart(2, '0')
+  return hourly.find((x) => x.hour === key) || hourly[hourly.length - 1]
+}
+
 // 달력 그리드: 1일 요일만큼 빈칸(null)을 앞에 채우고 1..말일을 잇는다
 export function monthGrid(year, month) {
   const lead = new Date(year, month, 1).getDay()

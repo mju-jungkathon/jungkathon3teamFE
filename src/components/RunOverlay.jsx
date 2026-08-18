@@ -80,7 +80,7 @@ function cta(run, setRun, onComplete) {
         go: async () => {
           setRun((r) => ({ ...r, ending: true, error: null }))
           try {
-            await endRunning(run.sessionId, { durationSec: run.elapsed, distanceKm: run.distanceKm, intensity: run.intensity })
+            await endRunning(run.sessionId, { durationSec: run.elapsed, distanceKm: run.distanceKm, intensity: run.intensity, routePath: run.route })
             setRun((r) => ({ ...r, step: 'vitals', ending: false }))
           } catch (err) {
             setRun((r) => ({ ...r, ending: false, error: err.message }))

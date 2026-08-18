@@ -16,6 +16,7 @@ export default function History() {
   const [sessions, setSessions] = useState(null) // GET /running-sessions 목록 원본
   const [listErr, setListErr] = useState('')
 
+  const [selected, setSelected] = useState(null) // 목록에서 고른 세션 요약 · null이면 그날의 목록 화면
   const [detail, setDetail] = useState(null)     // GET /running-sessions/{id} 상세
   const [guide, setGuide] = useState(null)       // POST .../recovery-guide (idempotent 재조회)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -25,24 +26,32 @@ export default function History() {
   useEffect(() => {
     let cancelled = false
     getRunningSessions('365d')
-      .then((d) => { if (!cancelled) setSessions(d.records || []) })
+      .then((d) => {
+        // E4090(이미 진행 중인 세션) 충돌을 풀려고 앱이 자동으로 강제 종료한 좀비 세션(distanceKm 0,
+        // COMPLETED 아님)은 사용자가 실제로 뛴 기록이 아니므로 기록 화면에서 제외한다.
+        const records = (d.records || []).filter((r) => !(r.distanceKm === 0 && r.status !== 'COMPLETED'))
+        if (!cancelled) setSessions(records)
+      })
       .catch((err) => { if (!cancelled) setListErr(err.message || '기록을 불러오지 못했어요') })
     return () => { cancelled = true }
   }, [])
 
-  // 표시 중인 연/월에 해당하는 세션만 "일 → 세션" 맵으로 정리
+  // 표시 중인 연/월에 해당하는 세션만 "일 → 세션 목록"(하루에 여러 번 뛴 경우 대비) 맵으로 정리
   const records = useMemo(() => {
     const map = {}
     for (const s of sessions || []) {
       const d = new Date(s.startedAt)
-      if (d.getFullYear() === cal.year && d.getMonth() === cal.month) map[d.getDate()] = s
+      if (d.getFullYear() === cal.year && d.getMonth() === cal.month) {
+        ;(map[d.getDate()] ??= []).push(s)
+      }
     }
+    for (const day in map) map[day].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
     return map
   }, [sessions, cal])
 
-  const list = Object.values(records)
+  const list = Object.values(records).flat()
   const bpms = list.filter((r) => r.avgBpm != null && r.avgBpm > 0)
-  const rec = records[selDay]
+  const dayRecords = records[selDay] || []
 
   const shift = (n) => () => {
     const dt = new Date(cal.year, cal.month + n, 1)
@@ -53,9 +62,11 @@ export default function History() {
   const openDay = (day) => {
     setSelDay(day)
     setSheetOpen(true)
-    const summary = records[day]
-    if (!summary) return
+    setSelected(null) // 항상 그날의 목록부터 보여준다
+  }
 
+  const selectSession = (summary) => {
+    setSelected(summary)
     setDetail(null)
     setGuide(null)
     setDetailErr('')
@@ -114,7 +125,7 @@ export default function History() {
               if (day == null) return <div key={`b${i}`} style={{ height: 46 }} />
               const r = records[day]
               const sel = day === selDay
-              const failed = r && (r.avgBpm == null || r.avgBpm === 0)
+              const failed = r?.length && r.every((s) => s.avgBpm == null || s.avgBpm === 0)
               return (
                 <button
                   key={day}
@@ -149,24 +160,58 @@ export default function History() {
       </div>
 
       {sheetOpen && (
-        <Sheet padded={false} label="러닝 기록 상세" onClose={() => setSheetOpen(false)}>
+        <Sheet padded={false} label="러닝 기록" onClose={() => setSheetOpen(false)}>
           {(close) => (
             <>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', boxShadow: 'var(--elevation-inset-bottom)' }}>
-                <div>
-                  <div className="sheet-title">{cal.month + 1}월 {selDay}일</div>
-                  <div className="cap-sm" style={{ marginTop: 4 }}>
-                    {detail ? `${fmtClock(detail.startedAt)} · ${fmtDurationKor(detail.durationSec)}` : ''}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {selected && (
+                    <button className="icon-btn plain" onClick={() => setSelected(null)} aria-label="목록으로" style={{ marginLeft: -8 }}>
+                      <ChevronLeft size={18} />
+                    </button>
+                  )}
+                  <div>
+                    <div className="sheet-title">{cal.month + 1}월 {selDay}일</div>
+                    <div className="cap-sm" style={{ marginTop: 4 }}>
+                      {selected
+                        ? (detail ? `${fmtClock(detail.startedAt)} · ${fmtDurationKor(detail.durationSec)}` : '')
+                        : (dayRecords.length ? `${dayRecords.length}건의 러닝` : '')}
+                    </div>
                   </div>
                 </div>
                 <button className="icon-btn" onClick={close} aria-label="닫기"><XIcon size={18} /></button>
               </div>
 
-              {!rec ? (
-                <div style={{ padding: '44px 20px', textAlign: 'center', animation: 'agRise .3s ease both' }}>
-                  <div className="h-lg">이 날은 러닝 기록이 없어요</div>
-                  <div className="body" style={{ color: 'var(--mute)', marginTop: 8 }}>점이 찍힌 날짜를 눌러 확인해보세요</div>
-                </div>
+              {!selected ? (
+                dayRecords.length === 0 ? (
+                  <div style={{ padding: '44px 20px', textAlign: 'center', animation: 'agRise .3s ease both' }}>
+                    <div className="h-lg">이 날은 러닝 기록이 없어요</div>
+                    <div className="body" style={{ color: 'var(--mute)', marginTop: 8 }}>점이 찍힌 날짜를 눌러 확인해보세요</div>
+                  </div>
+                ) : (
+                  <div style={{ animation: 'agRise .3s ease both' }}>
+                    {dayRecords.map((s) => {
+                      const failedRun = s.avgBpm == null || s.avgBpm === 0
+                      return (
+                        <button
+                          key={s.runningSessionId}
+                          className="press"
+                          onClick={() => selectSession(s)}
+                          style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '16px 20px', border: 'none', borderTop: '1px solid var(--hairline)', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          <div>
+                            <div style={{ font: 'var(--type-body-strong)' }}>{fmtClock(s.startedAt)}</div>
+                            <div className="cap-sm" style={{ marginTop: 4, color: 'var(--mute)' }}>
+                              {(s.distanceKm ?? 0).toFixed(2)}km · {fmtDurationKor(s.durationSec)}
+                              {failedRun ? ' · 측정 실패' : ` · ${s.avgBpm}BPM`}
+                            </div>
+                          </div>
+                          <ChevronRight size={18} style={{ color: 'var(--mute)', flex: 'none' }} />
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
               ) : detailLoading ? (
                 <div style={{ padding: '44px 20px', textAlign: 'center' }} className="cap-sm">불러오는 중…</div>
               ) : detailErr ? (
