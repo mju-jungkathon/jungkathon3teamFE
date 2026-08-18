@@ -38,7 +38,7 @@ export default function Solution({ run, setRun }) {
       </div>
 
       <div className="stat-grid c2" style={{ padding: '20px 20px 0' }}>
-        <div className="stat bordered-b"><div className="k">평균 심박</div><div className="n hr" style={{ fontSize: 38 }}>{guide?.measuredBpm ?? '-'}</div></div>
+        <div className="stat bordered-b"><div className="k">평균 심박</div><div className="n hr" style={{ fontSize: 38 }}>{guide?.measuredBpm ?? run.scanResult?.avgBpm ?? '-'}</div></div>
         <div className="stat bordered-b"><div className="k">UV 노출</div><div className="n" style={{ fontSize: 38 }}>{run.prepare ? `${run.prepare.uvIndex} · ${exposureMin}분` : '-'}</div></div>
         <div className="stat"><div className="k">거리</div><div className="n" style={{ fontSize: 38 }}>{run.distanceKm.toFixed(1)}km</div></div>
         <div className="stat"><div className="k">시간</div><div className="n" style={{ fontSize: 38 }}>{exposureMin}분</div></div>
