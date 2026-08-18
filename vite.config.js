@@ -2,7 +2,19 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// 로컬에서 배포된 백엔드(aftergrow.duckdns.org)를 직접 fetch하면 CORS가 막는다 —
+// dev/preview 서버를 통해 같은 오리진으로 우회 프록시한다(운영 빌드엔 영향 없음).
+const backendProxy = {
+  '/api': {
+    target: 'https://aftergrow.duckdns.org',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api/, ''),
+  },
+}
+
 export default defineConfig({
+  server: { proxy: backendProxy },
+  preview: { proxy: backendProxy },
   plugins: [
     react(),
     VitePWA({

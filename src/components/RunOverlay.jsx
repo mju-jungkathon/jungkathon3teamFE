@@ -40,7 +40,16 @@ function cta(run, setRun, onComplete) {
           setRun((r) => ({ ...r, starting: true, error: null }))
           try {
             const session = await startRunning(run.lat, run.lng, run.prepare?.uvIndex)
-            setRun((r) => ({ ...r, step: 'tracking', elapsed: 0, sessionId: session.runningSessionId, starting: false }))
+            // 지도가 다음 GPS 갱신을 기다리지 않고 바로 뜨도록 시작 시점의 좌표를 route 첫 점으로 심어둔다 —
+            // 실내·랩탑처럼 GPS 갱신이 뜸한 환경에서는 다음 fix가 한참 안 와 지도가 계속 '위치 수집 중…'에 멈춰 있었다.
+            setRun((r) => ({
+              ...r,
+              step: 'tracking',
+              elapsed: 0,
+              sessionId: session.runningSessionId,
+              starting: false,
+              route: r.lat != null ? [{ lat: r.lat, lng: r.lng }] : r.route,
+            }))
           } catch (err) {
             if (err.code !== 'E4090') {
               setRun((r) => ({ ...r, starting: false, error: err.message }))
@@ -50,7 +59,14 @@ function cta(run, setRun, onComplete) {
             try {
               await closeStaleSession()
               const session = await startRunning(run.lat, run.lng, run.prepare?.uvIndex)
-              setRun((r) => ({ ...r, step: 'tracking', elapsed: 0, sessionId: session.runningSessionId, starting: false }))
+              setRun((r) => ({
+                ...r,
+                step: 'tracking',
+                elapsed: 0,
+                sessionId: session.runningSessionId,
+                starting: false,
+                route: r.lat != null ? [{ lat: r.lat, lng: r.lng }] : r.route,
+              }))
             } catch {
               setRun((r) => ({ ...r, starting: false, error: '이전 러닝을 정리하지 못했어요. 잠시 후 다시 시도해주세요' }))
             }
