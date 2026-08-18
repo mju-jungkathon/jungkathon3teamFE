@@ -9,7 +9,10 @@ import Solution from './components/Solution.jsx'
 import History from './components/History.jsx'
 import Profile from './components/Profile.jsx'
 import TabBar from './components/TabBar.jsx'
-
+import React, { useState } from 'react';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import ProfilePage from './pages/ProfilePage';
 const RUN_STEPS = { start: RunStart, tracking: Tracking, vitals: Vitals, scan: FingerScan, solution: Solution }
 
 export default function App() {
@@ -17,6 +20,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [runOpen, setRunOpen] = useState(false)
   const [runStep, setRunStep] = useState('start')
+  const [currentPage, setCurrentPage] = useState('login');
   const bodyRef = useRef(null)
 
   const goTab = (id) => {
@@ -58,7 +62,11 @@ export default function App() {
             <span>9:41</span>
             <span>AURA</span>
           </div>
-
+    <div style={{ padding: '20px' }}>
+      {currentPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
+      {currentPage === 'signup' && <SignupPage onNavigate={setCurrentPage} />}
+      {currentPage === 'profile' && <ProfilePage onNavigate={setCurrentPage} />}
+    </div>
           <div className="body" ref={bodyRef}>
             {!loggedIn ? (
               <Login onAuth={() => setLoggedIn(true)} />
@@ -100,5 +108,6 @@ export default function App() {
 
       <div className="foot">로그인 → 홈(러닝 시작 시 전체화면 전환) → 기록 → 프로필</div>
     </div>
+    
   )
 }
