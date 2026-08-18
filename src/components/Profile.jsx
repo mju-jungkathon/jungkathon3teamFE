@@ -34,7 +34,6 @@ export default function Profile({ user, goal, onSaveGoal, onLogout }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="display" style={{ fontSize: 34 }}>{name}</div>
             <div className="cap" style={{ color: 'var(--charcoal)', marginTop: 8 }}>{email}</div>
-            <div className="cap-sm" style={{ marginTop: 2 }}>2026년 5월 가입 · 6주 연속 러닝</div>
           </div>
         </div>
 
