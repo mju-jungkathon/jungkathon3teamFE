@@ -6,7 +6,7 @@ import History from './components/History.jsx'
 import Profile from './components/Profile.jsx'
 import RunOverlay from './components/RunOverlay.jsx'
 import TabBar from './components/TabBar.jsx'
-import { logout as logoutApi, getPrepare, getLive, getUvForecast } from './api/endpoints.js'
+import { logout as logoutApi, getPrepare, getLive, getUvForecast, getProfile } from './api/endpoints.js'
 import { haversineKm, intensityFromPace, currentHourBucket, uvBand } from './utils.js'
 import { reverseGeocode } from './kakao.js'
 
@@ -17,17 +17,17 @@ export const INITIAL_RUN = {
   source: null,       // watch | rppg
   scanStage: 'idle',  // idle | measuring | done
   scanSec: 0,
-  cameraReady: false, // getUserMedia + video.play()까지 끝나야 true (그 전엔 카운트다운 멈춰있음)
+  cameraReady: false, // getUserMedia + video.play()까지 끝나야 true
   scanResult: null,   // { avgBpm, maxBpm, hrvMs, signalQuality }
   cool: 300,
   coolRunning: false,
   lat: null,
   lng: null,
   prepare: null,      // GET /running-sessions/prepare 응답
-  locationLabel: null, // 카카오 역지오코딩 결과("서울특별시 서대문구") — 백엔드는 이 값을 안 줘서 프론트에서 직접 구한다
+  locationLabel: null,// 카카오 역지오코딩 결과
   sessionId: null,
   distanceKm: 0,
-  route: [],          // tracking 중 수집한 실제 GPS 포인트 { lat, lng }[] — 지도 드로잉용
+  route: [],          // tracking 중 수집한 실제 GPS 포인트
   intensity: 'MODERATE',
   starting: false,    // 러닝 시작 API 호출 중
   ending: false,      // 러닝 종료 API 호출 중
@@ -36,11 +36,9 @@ export const INITIAL_RUN = {
   error: null,
 }
 
-// 1초 틱 하나로 러닝 경과·rPPG 측정·쿨다운 타이머를 모두 굴린다.
+// 1초 틱 타이머 (러닝 경과·rPPG 측정·쿨다운)
 function tick(r, overlayOpen) {
   if (r.step === 'tracking' && overlayOpen) return { ...r, elapsed: r.elapsed + 1 }
-  // scanStage: 'done'으로의 전환은 FingerScan의 실제 측정 파이프라인이 끝났을 때 일어난다(여기선 진행률 표시용 초만 증가).
-  // cameraReady 전(카메라 권한·플래시 준비 중)에는 카운트다운을 멈춰 실제 측정 시작 시점과 화면을 맞춘다.
   if (r.step === 'scan' && r.scanStage === 'measuring' && r.cameraReady) {
     return { ...r, scanSec: Math.min(12, r.scanSec + 1) }
   }
@@ -58,13 +56,30 @@ export default function App() {
   const [overlay, setOverlay] = useState(false)
   const [run, setRun] = useState(INITIAL_RUN)
 
+  // 1. 앱 접속/새로고침 시 저장된 토큰으로 자동 로그인 처리
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
+    if (token) {
+      getProfile()
+        .then((userData) => {
+          if (userData) setUser(userData)
+        })
+        .catch(() => {
+          // 토큰 만료 또는 유효하지 않을 경우 로컬 스토리지 정리
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+          localStorage.removeItem('token')
+        })
+    }
+  }, [])
+
+  // 2. 타이머 인터벌
   useEffect(() => {
     const id = setInterval(() => setRun((r) => tick(r, overlay)), 1000)
     return () => clearInterval(id)
   }, [overlay])
 
-  // GPS 위치 추적: 오버레이가 열리면 구독 시작, prepare는 첫 좌표를 받는 즉시 1회 호출.
-  // tracking 단계에서만 거리를 누적한다(준비 화면에서 서성이는 동안은 누적 안 함).
+  // 3. GPS 위치 추적 & Weather/Prepare 데이터 수집
   useEffect(() => {
     if (!overlay) return
     if (!navigator.geolocation) {
@@ -85,8 +100,6 @@ export default function App() {
         })
         if (!prepared) {
           prepared = true
-          // prepare의 uvIndex 대신 /weather/uv-forecast의 "지금" 버킷을 진짜 현재 UV로 쓴다.
-          // 두 요청이 어느 순서로 끝나든 맞물리도록 override를 클로저에 들고 있다가 나중 쪽에서 병합한다.
           let uvOverride = null
           getUvForecast(lat, lng)
             .then((d) => {
@@ -95,13 +108,13 @@ export default function App() {
               uvOverride = { uvIndex: bucket.uv, uvLevel: uvBand(bucket.uv), goodTimeToRun: bucket.uv < 7 }
               setRun((r) => (r.prepare ? { ...r, prepare: { ...r.prepare, ...uvOverride } } : r))
             })
-            .catch(() => {}) // 실패하면 prepare의 uvIndex 그대로 폴백
+            .catch(() => {})
           getPrepare(lat, lng)
             .then((prepare) => setRun((r) => ({ ...r, prepare: uvOverride ? { ...prepare, ...uvOverride } : prepare })))
             .catch((err) => setRun((r) => ({ ...r, error: err.message })))
           reverseGeocode(lat, lng)
             .then((locationLabel) => locationLabel && setRun((r) => ({ ...r, locationLabel })))
-            .catch(() => {}) // 실패해도 '위치 확인 중…' 폴백으로 충분
+            .catch(() => {})
         }
       },
       (err) =>
@@ -116,7 +129,7 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId)
   }, [overlay])
 
-  // 러닝 진행 중 서버 스냅샷 동기화(5초 간격). ref로 최신 run을 읽어 인터벌을 매초 재구독하지 않는다.
+  // 4. 러닝 실시간 스냅샷 동기화 (5초 간격)
   const runRef = useRef(run)
   runRef.current = run
   useEffect(() => {
@@ -137,8 +150,12 @@ export default function App() {
     setTab('history')
   }
 
+  // 5. 로그아웃 (서버 처리 및 로컬 토큰 완전 삭제)
   const logout = () => {
-    logoutApi().catch(() => {}) // 실패해도 로컬 토큰은 이미 지워지므로 UI는 그대로 로그아웃 처리
+    logoutApi().catch(() => {})
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('token')
     setUser(null)
     setPending(null)
     setTab('home')
