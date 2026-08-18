@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import RingGauge from './RingGauge.jsx'
 import { ChevronRight } from './Icons.jsx'
-import { AVG_SPEED_MPS } from '../data.js'
+import { AVG_SPEED_MPS, UV_BY_HOUR, NOW_HOUR_LABEL } from '../data.js'
 import { fmtElapsed, fmtTodayLabel, fmtClock } from '../utils.js'
 import { getHome, getUvForecast } from '../api/endpoints.js'
 
@@ -21,7 +21,7 @@ export default function Home({ run, onStartRun, onGoHistory }) {
   const [error, setError] = useState('')
 
   const hasSession = run.step !== 'start'
-  const distanceKm = ((run.elapsed * AVG_SPEED_MPS) / 1000).toFixed(2)
+  const distanceKm = run.distanceKm.toFixed(2)
 
   useEffect(() => {
     let cancelled = false

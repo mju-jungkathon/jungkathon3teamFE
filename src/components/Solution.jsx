@@ -1,13 +1,34 @@
+import { useEffect, useState } from 'react'
 import { fmtElapsed } from '../utils.js'
-
-const COOL_TOTAL = 300
+import { createRecoveryGuide, startCooldownTimer } from '../api/endpoints.js'
 
 export default function Solution({ run, setRun }) {
-  const { cool, coolRunning } = run
-  const toggle = () =>
-    setRun((r) => (r.cool === 0 ? { ...r, cool: COOL_TOTAL, coolRunning: true } : { ...r, coolRunning: !r.coolRunning }))
+  const { cool, coolRunning, guide } = run
+  const coolTotal = guide?.cooldownTimerSec ?? 300
+  const [retryTick, setRetryTick] = useState(0)
 
-  const ctaLabel = cool === 0 ? '다시 시작' : coolRunning ? '일시정지' : cool < COOL_TOTAL ? '이어서 시작' : '타이머 시작'
+  // 5.1(idempotent) → 5.2 순서. 재진입해도 서버가 기존 가이드를 그대로 돌려줘 안전.
+  // 가이드 생성이 실패하면(예: 서버 500) retryTick으로 재시도할 수 있게 열어둔다 — 실패해도 화면이 막히지 않도록.
+  useEffect(() => {
+    if (guide || !run.sessionId) return
+    setRun((r) => ({ ...r, error: null }))
+    createRecoveryGuide(run.sessionId)
+      .then(async (g) => {
+        setRun((r) => ({ ...r, guide: g, cool: g.cooldownTimerSec }))
+        try {
+          await startCooldownTimer(g.recoveryGuideId)
+        } catch {
+          // 타이머는 클라이언트가 로컬로 굴리므로 이 호출 실패는 무시해도 된다
+        }
+      })
+      .catch((err) => setRun((r) => ({ ...r, error: err.message })))
+  }, [retryTick])
+
+  const toggle = () =>
+    setRun((r) => (r.cool === 0 ? { ...r, cool: coolTotal, coolRunning: true } : { ...r, coolRunning: !r.coolRunning }))
+
+  const ctaLabel = cool === 0 ? '다시 시작' : coolRunning ? '일시정지' : cool < coolTotal ? '이어서 시작' : '타이머 시작'
+  const exposureMin = Math.round(run.elapsed / 60)
 
   return (
     <div>
@@ -17,34 +38,37 @@ export default function Solution({ run, setRun }) {
       </div>
 
       <div className="stat-grid c2" style={{ padding: '20px 20px 0' }}>
-        <div className="stat bordered-b"><div className="k">평균 심박</div><div className="n hr" style={{ fontSize: 38 }}>146</div></div>
-        <div className="stat bordered-b"><div className="k">UV 노출</div><div className="n" style={{ fontSize: 38 }}>6 · 38분</div></div>
-        <div className="stat"><div className="k">거리</div><div className="n" style={{ fontSize: 38 }}>4.8km</div></div>
-        <div className="stat"><div className="k">시간</div><div className="n" style={{ fontSize: 38 }}>28분</div></div>
+        <div className="stat bordered-b"><div className="k">평균 심박</div><div className="n hr" style={{ fontSize: 38 }}>{guide?.measuredBpm ?? '-'}</div></div>
+        <div className="stat bordered-b"><div className="k">UV 노출</div><div className="n" style={{ fontSize: 38 }}>{run.prepare ? `${run.prepare.uvIndex} · ${exposureMin}분` : '-'}</div></div>
+        <div className="stat"><div className="k">거리</div><div className="n" style={{ fontSize: 38 }}>{run.distanceKm.toFixed(1)}km</div></div>
+        <div className="stat"><div className="k">시간</div><div className="n" style={{ fontSize: 38 }}>{exposureMin}분</div></div>
       </div>
 
       <div className="soft" style={{ padding: 20, marginTop: 8 }}>
         <div className="body">
-          오늘 강도 높은 4.8km 러닝에 UV 지수 6까지 겹쳤어요. 수분 보충과 가벼운 스트레칭으로 마무리하는 걸 추천해요.
+          {guide?.summaryMessage ?? (run.error ? '회복 가이드를 만들지 못했어요' : '회복 가이드를 만드는 중이에요…')}
         </div>
+        {!guide && run.error && (
+          <button className="btn full secondary" style={{ marginTop: 14 }} onClick={() => setRetryTick((t) => t + 1)}>
+            다시 시도
+          </button>
+        )}
       </div>
 
       <div className="section">
-        <div style={{ padding: '18px 0', borderBottom: '1px solid var(--hairline-soft)' }}>
-          <div style={{ font: 'var(--type-body-strong)' }}>수분 보충</div>
-          <div className="cap" style={{ marginTop: 4 }}>500ml 물 또는 이온음료</div>
-        </div>
-        <div style={{ padding: '18px 0', borderBottom: '1px solid var(--hairline-soft)' }}>
-          <div style={{ font: 'var(--type-body-strong)' }}>쿨다운 스트레칭</div>
-          <div className="cap" style={{ marginTop: 4 }}>종아리·햄스트링 위주 5분</div>
-        </div>
+        {(guide?.actions ?? []).map((action) => (
+          <div key={action.type} style={{ padding: '18px 0', borderBottom: '1px solid var(--hairline-soft)' }}>
+            <div style={{ font: 'var(--type-body-strong)' }}>{action.title}</div>
+            <div className="cap" style={{ marginTop: 4 }}>{action.description}</div>
+          </div>
+        ))}
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '26px 0 8px' }}>
           <div className="cap-sm">쿨다운 타이머</div>
           <div style={{
             width: 172, height: 172, borderRadius: 'var(--radius-full)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `conic-gradient(var(--ink) ${(((COOL_TOTAL - cool) / COOL_TOTAL) * 360).toFixed(1)}deg, var(--hairline-soft) 0)`,
+            background: `conic-gradient(var(--ink) ${(((coolTotal - cool) / coolTotal) * 360).toFixed(1)}deg, var(--hairline-soft) 0)`,
           }}>
             <div style={{ width: 148, height: 148, borderRadius: 'var(--radius-full)', background: 'var(--canvas)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
               <div className="display" style={{ fontSize: 46, lineHeight: 1 }}>{fmtElapsed(cool)}</div>

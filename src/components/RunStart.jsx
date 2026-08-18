@@ -2,6 +2,7 @@ import { ROUTINE } from '../data.js'
 
 export default function RunStart({ run, onOpenSheet }) {
   const allDone = run.done.length === ROUTINE.length
+  const { prepare } = run
 
   return (
     <div>
@@ -16,11 +17,13 @@ export default function RunStart({ run, onOpenSheet }) {
         <div className="stat-grid c2 bordered-b">
           <div style={{ paddingBottom: 16 }}>
             <div className="cap-sm">현재 위치</div>
-            <div style={{ font: 'var(--type-body-strong)', marginTop: 4 }}>서울 성동구</div>
+            <div style={{ font: 'var(--type-body-strong)', marginTop: 4 }}>{run.locationLabel ?? '위치 확인 중…'}</div>
           </div>
           <div style={{ paddingBottom: 16 }}>
             <div className="cap-sm">UV 지수</div>
-            <div style={{ font: 'var(--type-body-strong)', marginTop: 4 }}>6 · 보통</div>
+            <div style={{ font: 'var(--type-body-strong)', marginTop: 4 }}>
+              {prepare ? `${prepare.uvIndex} · ${prepare.uvLevel}` : '측정 중…'}
+            </div>
           </div>
         </div>
 

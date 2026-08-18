@@ -1,7 +1,13 @@
 import RingGauge from './RingGauge.jsx'
+import { selectHeartRateSource } from '../api/endpoints.js'
 
 export default function Vitals({ run, setRun }) {
-  const pick = (source) => () => setRun((r) => ({ ...r, source }))
+  // nextStep은 WATCH→FETCH_APPLE_HEALTH, RPPG→RPPG_GUIDE로 고정이라 화면 분기는 그대로 로컬에서 하고,
+  // 이 호출은 서버 쪽 흐름 기록용이라 실패해도 로컬 분기를 막지 않는다(선택값 자체는 저장 안 됨).
+  const pick = (source) => () => {
+    setRun((r) => ({ ...r, source }))
+    selectHeartRateSource(run.sessionId, source.toUpperCase()).catch(() => {})
+  }
 
   return (
     <div style={{ padding: '24px 20px' }}>

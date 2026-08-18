@@ -1,7 +1,7 @@
 // node --test src/utils.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { fmtElapsed, fmtPace, uvBand, monthGrid } from './utils.js'
+import { fmtElapsed, fmtPace, uvBand, monthGrid, haversineKm, intensityFromPace } from './utils.js'
 
 test('fmtElapsed', () => {
   assert.equal(fmtElapsed(0), '00:00')
@@ -20,6 +20,21 @@ test('uvBand', () => {
   assert.equal(uvBand(5), '보통')
   assert.equal(uvBand(7), '높음')
   assert.equal(uvBand(8), '매우 높음')
+})
+
+test('haversineKm', () => {
+  assert.equal(haversineKm(37.5665, 126.978, 37.5665, 126.978), 0)
+  // 적도에서 경도 1도 ≈ 111.32km
+  const d = haversineKm(0, 0, 0, 1)
+  assert.ok(d > 111 && d < 112, `expected ~111.3km, got ${d}`)
+})
+
+test('intensityFromPace', () => {
+  assert.equal(intensityFromPace(null), 'MODERATE')
+  assert.equal(intensityFromPace(0), 'MODERATE')
+  assert.equal(intensityFromPace(300), 'HIGH')
+  assert.equal(intensityFromPace(360), 'MODERATE')
+  assert.equal(intensityFromPace(500), 'LOW')
 })
 
 test('monthGrid — 2026년 8월은 토요일 시작, 31일까지', () => {
