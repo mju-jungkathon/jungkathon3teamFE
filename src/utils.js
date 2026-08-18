@@ -98,23 +98,3 @@ export function fmtTodayLabel(d = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`
 }
 
-// 서버가 주는 GPS 좌표 배열([{lat,lng}])을 RunMap이 그리는 290x200 뷰박스의
-// 폴리라인 path(d)로 정규화한다. 점이 2개 미만이면 그릴 선이 없으므로 null.
-export function routeToSvgPath(routePath) {
-  if (!Array.isArray(routePath) || routePath.length < 2) return null
-  const lats = routePath.map((p) => p.lat)
-  const lngs = routePath.map((p) => p.lng)
-  const latMin = Math.min(...lats), latMax = Math.max(...lats)
-  const lngMin = Math.min(...lngs), lngMax = Math.max(...lngs)
-  const latRange = latMax - latMin || 0.0005
-  const lngRange = lngMax - lngMin || 0.0005
-  const PAD = 34
-  const W = 290 - PAD * 2
-  const H = 200 - PAD * 2
-  const pts = routePath.map((p) => [
-    Math.round((PAD + ((p.lng - lngMin) / lngRange) * W) * 10) / 10,
-    // 위도가 클수록 화면 위쪽(=y 작음)이 되도록 뒤집는다
-    Math.round((PAD + (1 - (p.lat - latMin) / latRange) * H) * 10) / 10,
-  ])
-  return { d: 'M' + pts.map((xy) => xy.join(',')).join(' L'), start: pts[0] }
-}
