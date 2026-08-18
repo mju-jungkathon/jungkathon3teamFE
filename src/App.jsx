@@ -8,6 +8,7 @@ import RunOverlay from './components/RunOverlay.jsx'
 import TabBar from './components/TabBar.jsx'
 import { getPrepare, getLive } from './api/endpoints.js'
 import { haversineKm, intensityFromPace } from './utils.js'
+import { reverseGeocode } from './kakao.js'
 
 export const INITIAL_RUN = {
   step: 'start',      // start | tracking | vitals | scan | solution
@@ -23,6 +24,7 @@ export const INITIAL_RUN = {
   lat: null,
   lng: null,
   prepare: null,      // GET /running-sessions/prepare 응답
+  locationLabel: null, // 카카오 역지오코딩 결과("서울특별시 서대문구") — 백엔드는 이 값을 안 줘서 프론트에서 직접 구한다
   sessionId: null,
   distanceKm: 0,
   route: [],          // tracking 중 수집한 실제 GPS 포인트 { lat, lng }[] — 지도 드로잉용
@@ -64,7 +66,11 @@ export default function App() {
   // GPS 위치 추적: 오버레이가 열리면 구독 시작, prepare는 첫 좌표를 받는 즉시 1회 호출.
   // tracking 단계에서만 거리를 누적한다(준비 화면에서 서성이는 동안은 누적 안 함).
   useEffect(() => {
-    if (!overlay || !navigator.geolocation) return
+    if (!overlay) return
+    if (!navigator.geolocation) {
+      setRun((r) => ({ ...r, error: '이 브라우저/환경에서는 위치 정보를 쓸 수 없어요 (HTTPS 또는 localhost 필요)' }))
+      return
+    }
     let prepared = false
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -82,10 +88,19 @@ export default function App() {
           getPrepare(lat, lng)
             .then((prepare) => setRun((r) => ({ ...r, prepare })))
             .catch((err) => setRun((r) => ({ ...r, error: err.message })))
+          reverseGeocode(lat, lng)
+            .then((locationLabel) => locationLabel && setRun((r) => ({ ...r, locationLabel })))
+            .catch(() => {}) // 실패해도 '위치 확인 중…' 폴백으로 충분
         }
       },
-      () => setRun((r) => ({ ...r, error: '위치 권한이 필요해요' })),
-      { enableHighAccuracy: true, maximumAge: 2000 },
+      (err) =>
+        setRun((r) => ({
+          ...r,
+          error: err.code === err.TIMEOUT
+            ? '위치를 찾는 데 시간이 오래 걸려요. 기기의 위치 서비스(GPS)가 켜져 있는지 확인해주세요'
+            : '위치 권한이 필요해요',
+        })),
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 },
     )
     return () => navigator.geolocation.clearWatch(watchId)
   }, [overlay])

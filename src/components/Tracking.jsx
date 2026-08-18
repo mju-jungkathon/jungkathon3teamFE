@@ -18,7 +18,7 @@ export default function Tracking({ run }) {
         </div>
       </div>
 
-      <RunMap points={run.route} caption={run.prepare?.locationLabel ?? '위치 확인 중…'} />
+      <RunMap points={run.route} caption={run.locationLabel ?? '위치 확인 중…'} />
 
       <div className="stat-grid c2 section">
         <div className="stat bordered-b" style={{ padding: '20px 0' }}>
