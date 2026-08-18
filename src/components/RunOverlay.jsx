@@ -48,7 +48,7 @@ function cta(run, setRun, onComplete) {
               elapsed: 0,
               sessionId: session.runningSessionId,
               starting: false,
-              route: r.lat != null ? [{ lat: r.lat, lng: r.lng }] : r.route,
+              route: r.lat != null ? [{ lat: r.lat, lng: r.lng, t: 0 }] : r.route,
             }))
           } catch (err) {
             if (err.code !== 'E4090') {
@@ -65,7 +65,7 @@ function cta(run, setRun, onComplete) {
                 elapsed: 0,
                 sessionId: session.runningSessionId,
                 starting: false,
-                route: r.lat != null ? [{ lat: r.lat, lng: r.lng }] : r.route,
+                route: r.lat != null ? [{ lat: r.lat, lng: r.lng, t: 0 }] : r.route,
               }))
             } catch {
               setRun((r) => ({ ...r, starting: false, error: '이전 러닝을 정리하지 못했어요. 잠시 후 다시 시도해주세요' }))
