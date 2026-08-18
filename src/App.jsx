@@ -7,6 +7,7 @@ import Profile from './components/Profile.jsx'
 import RunOverlay from './components/RunOverlay.jsx'
 import TabBar from './components/TabBar.jsx'
 import { logout as logoutApi, getPrepare, getLive, getUvForecast, getProfile } from './api/endpoints.js'
+import { getTokens, setTokens } from './api/client.js'
 import { haversineKm, intensityFromPace, currentHourBucket, uvBand } from './utils.js'
 import { reverseGeocode } from './kakao.js'
 
@@ -58,7 +59,7 @@ export default function App() {
 
   // 1. 앱 접속/새로고침 시 저장된 토큰으로 자동 로그인 처리
   useEffect(() => {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
+    const token = getTokens()?.accessToken
     if (token) {
       getProfile()
         .then((userData) => {
@@ -66,9 +67,7 @@ export default function App() {
         })
         .catch(() => {
           // 토큰 만료 또는 유효하지 않을 경우 로컬 스토리지 정리
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
-          localStorage.removeItem('token')
+          setTokens(null)
         })
     }
   }, [])
@@ -152,10 +151,7 @@ export default function App() {
 
   // 5. 로그아웃 (서버 처리 및 로컬 토큰 완전 삭제)
   const logout = () => {
-    logoutApi().catch(() => {})
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('token')
+    logoutApi().catch(() => {}) // 실패해도 로컬 토큰은 logoutApi 내부에서 이미 지워짐
     setUser(null)
     setPending(null)
     setTab('home')
