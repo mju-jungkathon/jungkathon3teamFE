@@ -6,11 +6,12 @@ import { loadKakao } from '../kakao.js'
 // `path`를 실제 좌표로 바꾸면 그대로 동작한다.
 const ROUTE_LEN = 610
 
-// 러닝 진행 중(live) 카카오맵: 현재 위치 마커 + 지나온 경로 폴리라인.
-function LiveMap({ points }) {
+// 러닝 진행 중(live)엔 현재 위치를 따라가고, 종료된 러닝(fit)엔 경로 전체가 보이게 맞춘다.
+function LiveMap({ points, fit = false }) {
   const elRef = useRef(null)
   const mapRef = useRef(null)
   const lineRef = useRef(null)
+  const startMarkerRef = useRef(null)
   const markerRef = useRef(null)
 
   useEffect(() => {
@@ -18,32 +19,42 @@ function LiveMap({ points }) {
     let cancelled = false
     loadKakao().then((kakao) => {
       if (cancelled || !elRef.current) return
-      const last = points[points.length - 1]
-      const center = new kakao.maps.LatLng(last.lat, last.lng)
+      const path = points.map((p) => new kakao.maps.LatLng(p.lat, p.lng))
+      const last = path[path.length - 1]
       if (!mapRef.current) {
-        mapRef.current = new kakao.maps.Map(elRef.current, { center, level: 4 })
+        mapRef.current = new kakao.maps.Map(elRef.current, { center: last, level: 4 })
         lineRef.current = new kakao.maps.Polyline({
           map: mapRef.current, strokeWeight: 4, strokeColor: '#171717', strokeOpacity: 0.9,
         })
-        markerRef.current = new kakao.maps.Marker({ map: mapRef.current, position: center })
+        markerRef.current = new kakao.maps.Marker({ map: mapRef.current, position: last })
       }
-      lineRef.current.setPath(points.map((p) => new kakao.maps.LatLng(p.lat, p.lng)))
-      markerRef.current.setPosition(center)
-      mapRef.current.panTo(center)
+      lineRef.current.setPath(path)
+      markerRef.current.setPosition(last)
+
+      if (fit && path.length > 1) {
+        if (!startMarkerRef.current) {
+          startMarkerRef.current = new kakao.maps.Marker({ map: mapRef.current, position: path[0] })
+        } else {
+          startMarkerRef.current.setPosition(path[0])
+        }
+        mapRef.current.setBounds(path.reduce((b, ll) => (b.extend(ll), b), new kakao.maps.LatLngBounds()))
+      } else {
+        mapRef.current.panTo(last)
+      }
     })
     return () => { cancelled = true }
-  }, [points])
+  }, [points, fit])
 
   return <div ref={elRef} style={{ width: '100%', aspectRatio: '290 / 200', background: 'var(--soft-cloud)' }} />
 }
 
-export default function RunMap({ path = PATH_A, caption, offset, moving = false, start, points }) {
+export default function RunMap({ path = PATH_A, caption, offset, moving = false, start, points, fit = false }) {
   const live = Array.isArray(points)
 
   if (live) {
     return (
       <div className="map soft">
-        <LiveMap points={points} />
+        <LiveMap points={points} fit={fit} />
         {caption && <div className="cap">{points.length === 0 ? '위치 수집 중…' : caption}</div>}
       </div>
     )

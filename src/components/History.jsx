@@ -3,7 +3,7 @@ import Sheet from './Sheet.jsx'
 import RunMap from './RunMap.jsx'
 import { ChevronLeft, ChevronRight, XIcon } from './Icons.jsx'
 import { WEEKDAYS } from '../data.js'
-import { monthGrid, fmtPace, fmtClock, fmtDurationKor, uvBand, routeToSvgPath, isZombieSession } from '../utils.js'
+import { monthGrid, fmtPace, fmtClock, fmtDurationKor, uvBand, isZombieSession } from '../utils.js'
 import { getRunningSessions, getRunningSessionDetail, createRecoveryGuide } from '../api/endpoints.js'
 
 const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
@@ -83,8 +83,6 @@ export default function History() {
       .catch((err) => setDetailErr(err.message || '기록을 불러오지 못했어요'))
       .finally(() => setDetailLoading(false))
   }
-
-  const svg = detail ? routeToSvgPath(detail.routePath) : null
 
   return (
     <>
@@ -220,11 +218,11 @@ export default function History() {
                 </div>
               ) : detail ? (
                 <div style={{ animation: 'agRise .3s ease both' }}>
-                  <RunMap
-                    path={svg?.d ?? null}
-                    start={svg?.start}
-                    caption={detail.routePath?.length ? `GPS 경로 · 지점 ${detail.routePath.length}개` : '경로 정보 없음'}
-                  />
+                  {detail.routePath?.length ? (
+                    <RunMap points={detail.routePath} fit caption={`GPS 경로 · 지점 ${detail.routePath.length}개`} />
+                  ) : (
+                    <RunMap path={null} caption="경로 정보 없음" />
+                  )}
 
                   <div className="stat-grid c2 section">
                     <div className="stat bordered-b"><div className="k">이동 거리</div><div className="n xl">{(detail.distanceKm ?? 0).toFixed(2)}<span className="u">km</span></div></div>
