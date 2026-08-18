@@ -30,7 +30,7 @@ function lowUvRanges(hourly, threshold = 4) {
   return ranges.map(([s, e]) => `${String(s).padStart(2, '0')}시~${String(e).padStart(2, '0')}시`)
 }
 
-export default function Home({ run, onStartRun, onGoHistory }) {
+export default function Home({ run, overlay, onStartRun, onGoHistory }) {
   const [home, setHome] = useState(null)
   const [uv, setUv] = useState(null)
   const [locationLabel, setLocationLabel] = useState(null)
@@ -40,7 +40,10 @@ export default function Home({ run, onStartRun, onGoHistory }) {
   const hasSession = run.step !== 'start'
   const distanceKm = run.distanceKm.toFixed(2)
 
+  // 러닝 오버레이 아래에서 Home은 계속 마운트돼 있으므로(tab은 안 바뀜), 러닝을 마치고
+  // 오버레이가 닫힐 때마다 다시 불러와야 누적거리·평균심박·누적UV가 최신 값으로 보인다.
   useEffect(() => {
+    if (overlay) return
     let cancelled = false
 
     async function load() {
@@ -76,7 +79,7 @@ export default function Home({ run, onStartRun, onGoHistory }) {
 
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [overlay])
 
   const nowBucket = uv ? currentHourBucket(uv.hourly) : null
   const lowRanges = uv ? lowUvRanges(uv.hourly) : []
