@@ -6,6 +6,7 @@ import History from './components/History.jsx'
 import Profile from './components/Profile.jsx'
 import RunOverlay from './components/RunOverlay.jsx'
 import TabBar from './components/TabBar.jsx'
+import { logout as logoutApi } from './api/endpoints.js'
 
 export const INITIAL_RUN = {
   step: 'start',      // start | tracking | vitals | scan | solution
@@ -50,6 +51,7 @@ export default function App() {
   }
 
   const logout = () => {
+    logoutApi().catch(() => {}) // 실패해도 로컬 토큰은 이미 지워지므로 UI는 그대로 로그아웃 처리
     setUser(null)
     setPending(null)
     setTab('home')
