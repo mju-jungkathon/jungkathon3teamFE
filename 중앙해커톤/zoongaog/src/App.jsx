@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react'
-import Login from './components/Login.jsx'
 import Home from './components/Home.jsx'
 import RunStart from './components/RunStart.jsx'
 import Tracking from './components/Tracking.jsx'
@@ -7,19 +6,18 @@ import Vitals from './components/Vitals.jsx'
 import FingerScan from './components/FingerScan.jsx'
 import Solution from './components/Solution.jsx'
 import History from './components/History.jsx'
-import Profile from './components/Profile.jsx'
 import TabBar from './components/TabBar.jsx'
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+import ProfilePage from './pages/ProfilePage'
+
 const RUN_STEPS = { start: RunStart, tracking: Tracking, vitals: Vitals, scan: FingerScan, solution: Solution }
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(false)
   const [activeTab, setActiveTab] = useState('home')
   const [runOpen, setRunOpen] = useState(false)
   const [runStep, setRunStep] = useState('start')
-  const [currentPage, setCurrentPage] = useState('login');
+  const [currentPage, setCurrentPage] = useState('login')
   const bodyRef = useRef(null)
 
   const goTab = (id) => {
@@ -40,9 +38,19 @@ export default function App() {
   const goRunStep = (step) => setRunStep(step)
 
   const logout = () => {
-    setLoggedIn(false)
+    setCurrentPage('login')
     setActiveTab('home')
     setRunOpen(false)
+  }
+
+  // 로그인 성공 시 메인 화면(main)으로 전환
+  const handleLoginNavigate = (targetPage) => {
+    if (targetPage === 'profile' || targetPage === 'main') {
+      setCurrentPage('main')
+      setActiveTab('home')
+    } else {
+      setCurrentPage(targetPage)
+    }
   }
 
   const RunScreen = RUN_STEPS[runStep]
@@ -61,26 +69,33 @@ export default function App() {
             <span>9:41</span>
             <span>AURA</span>
           </div>
-    <div style={{ padding: '20px' }}>
-      {currentPage === 'login' && <LoginPage onNavigate={setCurrentPage} />}
-      {currentPage === 'signup' && <SignupPage onNavigate={setCurrentPage} />}
-      {currentPage === 'profile' && <ProfilePage onNavigate={setCurrentPage} />}
-    </div>
+
           <div className="body" ref={bodyRef}>
-            {!loggedIn ? (
-              <Login onAuth={() => setLoggedIn(true)} />
-            ) : (
+            {/* 1. 로그인 화면 */}
+            {currentPage === 'login' && (
+              <LoginPage onNavigate={handleLoginNavigate} />
+            )}
+
+            {/* 2. 회원가입 화면 */}
+            {currentPage === 'signup' && (
+              <SignupPage onNavigate={setCurrentPage} />
+            )}
+
+            {/* 3. 로그인 성공 후 보여줄 메인 프로토타입 화면 */}
+            {currentPage === 'main' && (
               <>
                 {activeTab === 'home' && <Home onGoRun={openRun} onGoHistory={() => goTab('history')} />}
                 {activeTab === 'history' && <History />}
-                {activeTab === 'profile' && <Profile onLogout={logout} />}
+                {activeTab === 'profile' && <ProfilePage onNavigate={setCurrentPage} onLogout={logout} />}
               </>
             )}
           </div>
 
-          {loggedIn && <TabBar active={activeTab} onChange={goTab} />}
+          {/* 메인 화면일 때만 하단 탭바 표시 */}
+          {currentPage === 'main' && <TabBar active={activeTab} onChange={goTab} />}
 
-          {loggedIn && runOpen && (
+          {/* 메인 화면일 때만 러닝 오버레이 표시 */}
+          {currentPage === 'main' && runOpen && (
             <div className="run-overlay">
               <div className="run-overlay-top">
                 <span className="label">러닝 진행</span>
@@ -107,6 +122,5 @@ export default function App() {
 
       <div className="foot">로그인 → 홈(러닝 시작 시 전체화면 전환) → 기록 → 프로필</div>
     </div>
-    
   )
 }
