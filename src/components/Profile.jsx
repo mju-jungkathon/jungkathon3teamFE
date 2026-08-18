@@ -3,7 +3,7 @@ import Sheet from './Sheet.jsx'
 import { PencilIcon } from './Icons.jsx'
 import { GOAL_TYPES, GOAL_TYPE_TO_ENUM, GOAL_TYPE_FROM_ENUM } from '../data.js'
 import { isZombieSession, weeklyStreak } from '../utils.js'
-import { getProfile, updateGoal, updateIntegrations, getRunningSessions } from '../api/endpoints.js'
+import { getProfile, updateGoal, updateIntegrations, getRunningSessions, withdrawAccount } from '../api/endpoints.js'
 
 // 카메라/위치는 서버 값이 아니라 "지금 이 순간" 브라우저의 실제 상태를 봐야 한다(API 명세 §7.6) —
 // 권한 대화상자를 새로 띄우지 않는 permissions.query만 쓴다(getUserMedia는 실제 기능 진입 시에만).
@@ -29,8 +29,12 @@ function PermRow({ label, value }) {
 }
 
 export default function Profile({ user, goal, onSaveGoal, onLogout }) {
-  const [sheet, setSheet] = useState(null) // 'goal' | 'logout' | null
+  const [sheet, setSheet] = useState(null) // 'goal' | 'logout' | 'withdraw' | null
   const [draft, setDraft] = useState(goal)
+
+  const [withdrawPw, setWithdrawPw] = useState('')
+  const [withdrawErr, setWithdrawErr] = useState('')
+  const [withdrawing, setWithdrawing] = useState(false)
 
   const [profile, setProfile] = useState(null)       // GET /users/me/profile
   const [profileErr, setProfileErr] = useState('')
@@ -99,6 +103,22 @@ export default function Profile({ user, goal, onSaveGoal, onLogout }) {
     }
   }
 
+  const openWithdraw = () => { setWithdrawPw(''); setWithdrawErr(''); setSheet('withdraw') }
+
+  const doWithdraw = async (close) => {
+    setWithdrawing(true)
+    setWithdrawErr('')
+    try {
+      await withdrawAccount(withdrawPw)
+      close()
+      onLogout() // 계정이 이미 삭제됐으니 서버 로그아웃 호출은 실패해도 무시되고 로컬 상태만 정리됨
+    } catch (err) {
+      setWithdrawErr(err.code === 'E4011' ? '비밀번호가 일치하지 않아요' : (err.message || '탈퇴에 실패했어요'))
+    } finally {
+      setWithdrawing(false)
+    }
+  }
+
   return (
     <>
       <div className="scroll" style={{ paddingBottom: 88 }}>
@@ -157,6 +177,13 @@ export default function Profile({ user, goal, onSaveGoal, onLogout }) {
 
           <div style={{ padding: '24px 0 28px' }}>
             <button className="btn lg full secondary" onClick={() => setSheet('logout')}>로그아웃</button>
+            <button
+              className="press"
+              onClick={openWithdraw}
+              style={{ display: 'block', width: '100%', textAlign: 'center', marginTop: 14, border: 'none', background: 'none', padding: 0, font: 'var(--type-caption-sm)', color: 'var(--mute)', textDecoration: 'underline', cursor: 'pointer' }}
+            >
+              회원 탈퇴
+            </button>
           </div>
         </div>
       </div>
@@ -219,6 +246,39 @@ export default function Profile({ user, goal, onSaveGoal, onLogout }) {
               <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
                 <button className="btn lg full secondary" onClick={close}>취소</button>
                 <button className="btn lg full" onClick={onLogout}>로그아웃</button>
+              </div>
+            </>
+          )}
+        </Sheet>
+      )}
+
+      {sheet === 'withdraw' && (
+        <Sheet label="회원 탈퇴" onClose={() => setSheet(null)}>
+          {(close) => (
+            <>
+              <div className="sheet-title">정말 탈퇴하시겠어요?</div>
+              <div className="body" style={{ marginTop: 10, color: 'var(--sale)' }}>
+                되돌릴 수 없어요. 목표·알림·연동 상태와 모든 러닝 기록이 함께 삭제돼요.
+              </div>
+
+              <div className="field" style={{ marginTop: 20 }}>
+                <label htmlFor="withdraw-pw">비밀번호 확인</label>
+                <input
+                  id="withdraw-pw"
+                  type="password"
+                  placeholder="현재 비밀번호"
+                  value={withdrawPw}
+                  onChange={(e) => setWithdrawPw(e.target.value)}
+                  className={withdrawErr ? 'invalid' : ''}
+                />
+                {withdrawErr && <div className="err">{withdrawErr}</div>}
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+                <button className="btn lg full secondary" onClick={close} disabled={withdrawing}>취소</button>
+                <button className="btn lg full" onClick={() => doWithdraw(close)} disabled={withdrawing || !withdrawPw}>
+                  {withdrawing ? '처리 중…' : '탈퇴하기'}
+                </button>
               </div>
             </>
           )}
