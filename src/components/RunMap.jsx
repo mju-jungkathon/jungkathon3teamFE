@@ -61,17 +61,21 @@ export default function RunMap({ path = PATH_A, caption, offset, moving = false,
           <line x1="240" y1="0" x2="240" y2="200" />
         </g>
 
-        {offset == null ? (
-          <path id="agRoute" d={path} fill="none" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
+        {path ? (
+          offset == null ? (
+            <path id="agRoute" d={path} fill="none" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round" />
+          ) : (
+            <>
+              <path id="agRoute" d={path} fill="none" stroke="var(--hairline)" strokeWidth="4" strokeLinecap="round" />
+              <path
+                d={path} fill="none" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round"
+                strokeDasharray={ROUTE_LEN} strokeDashoffset={offset}
+                style={{ transition: 'stroke-dashoffset .9s linear' }}
+              />
+            </>
+          )
         ) : (
-          <>
-            <path id="agRoute" d={path} fill="none" stroke="var(--hairline)" strokeWidth="4" strokeLinecap="round" />
-            <path
-              d={path} fill="none" stroke="var(--ink)" strokeWidth="4" strokeLinecap="round"
-              strokeDasharray={ROUTE_LEN} strokeDashoffset={offset}
-              style={{ transition: 'stroke-dashoffset .9s linear' }}
-            />
-          </>
+          <text x="145" y="104" textAnchor="middle" fontSize="12" fill="var(--mute)">경로 정보 없음</text>
         )}
 
         {moving ? (
@@ -80,7 +84,7 @@ export default function RunMap({ path = PATH_A, caption, offset, moving = false,
               <mpath href="#agRoute" />
             </animateMotion>
           </circle>
-        ) : start ? (
+        ) : start && path ? (
           <circle cx={start[0]} cy={start[1]} r="5" fill="var(--canvas)" stroke="var(--ink)" strokeWidth="3" />
         ) : null}
       </svg>

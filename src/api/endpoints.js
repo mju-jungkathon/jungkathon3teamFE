@@ -2,8 +2,22 @@
 import { api, request, setTokens, localDateTime } from './client.js'
 
 // --- 1. 인증 ---
-export const signup = (email, password, nickname) =>
-  api.post('/auth/signup', { email, password, nickname }, { auth: false })
+// 가입 응답에도 accessToken이 함께 온다 — 온보딩(목표 설정)에서 바로 쓸 수 있도록 여기서 저장한다.
+export async function signup(email, password, nickname, agree = {}) {
+  const d = await request('POST', '/auth/signup', {
+    body: {
+      email,
+      password,
+      nickname,
+      agreeTerms: !!agree.terms,
+      agreePrivacy: !!agree.privacy,
+      agreeMarketing: !!agree.marketing,
+    },
+    auth: false,
+  })
+  setTokens({ accessToken: d.accessToken, refreshToken: d.refreshToken, expiresIn: d.expiresIn })
+  return d
+}
 
 export async function login(email, password) {
   const t = await request('POST', '/auth/login', { body: { email, password }, auth: false })
@@ -83,6 +97,11 @@ export const getMeasurements = (range = '30d') => api.get('/heart-rate-measureme
 export const retryMeasurement = (measurementId) =>
   api.post(`/heart-rate-measurements/${measurementId}/retry`)
 
+// --- 4-1. 러닝 기록 조회 (화면 8, 기록 화면) ---
+// 목록 응답에는 경로(GPS)가 빠져 있다 — 지도는 상세 조회에서만 채워진다.
+export const getRunningSessions = (range = '90d') => api.get('/running-sessions', { range })
+export const getRunningSessionDetail = (sessionId) => api.get(`/running-sessions/${sessionId}`)
+
 // --- 5. 회복 가이드 ---
 // idempotent. complete 전에 반드시 이걸 먼저 호출해야 한다(안 하면 404).
 export const createRecoveryGuide = (sessionId) =>
@@ -97,3 +116,6 @@ export const updateGoal = (goal) => api.patch('/users/me/goal', goal)
 export const getIntegrations = () => api.get('/users/me/integrations')
 export const updateNotifications = (notifications) =>
   api.patch('/users/me/notifications', notifications)
+
+// --- 7. 날씨 (홈 화면 시간대별 UV 그래프) ---
+export const getUvForecast = (lat, lng) => api.get('/weather/uv-forecast', { lat, lng })

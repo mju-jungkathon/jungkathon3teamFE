@@ -6,7 +6,7 @@ import History from './components/History.jsx'
 import Profile from './components/Profile.jsx'
 import RunOverlay from './components/RunOverlay.jsx'
 import TabBar from './components/TabBar.jsx'
-import { getPrepare, getLive } from './api/endpoints.js'
+import { logout as logoutApi, getPrepare, getLive } from './api/endpoints.js'
 import { haversineKm, intensityFromPace } from './utils.js'
 import { reverseGeocode } from './kakao.js'
 
@@ -127,6 +127,7 @@ export default function App() {
   }
 
   const logout = () => {
+    logoutApi().catch(() => {}) // 실패해도 로컬 토큰은 이미 지워지므로 UI는 그대로 로그아웃 처리
     setUser(null)
     setPending(null)
     setTab('home')

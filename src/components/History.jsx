@@ -1,19 +1,47 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Sheet from './Sheet.jsx'
 import RunMap from './RunMap.jsx'
 import { ChevronLeft, ChevronRight, XIcon } from './Icons.jsx'
-import { RECORDS, RECORD_YEAR, RECORD_MONTH, WEEKDAYS, PATH_B } from '../data.js'
-import { monthGrid } from '../utils.js'
+import { WEEKDAYS } from '../data.js'
+import { monthGrid, fmtPace, fmtClock, fmtDurationKor, uvBand, routeToSvgPath } from '../utils.js'
+import { getRunningSessions, getRunningSessionDetail, createRecoveryGuide } from '../api/endpoints.js'
+
+const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
 
 export default function History() {
-  const [cal, setCal] = useState({ year: RECORD_YEAR, month: RECORD_MONTH })
-  const [selDay, setSelDay] = useState(15)
+  const [cal, setCal] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() } })
+  const [selDay, setSelDay] = useState(new Date().getDate())
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  // 목업 데이터는 2026년 8월치만 있다 — 다른 달은 빈 달로 보여준다
-  const records = cal.year === RECORD_YEAR && cal.month === RECORD_MONTH ? RECORDS : {}
+  const [sessions, setSessions] = useState(null) // GET /running-sessions 목록 원본
+  const [listErr, setListErr] = useState('')
+
+  const [detail, setDetail] = useState(null)     // GET /running-sessions/{id} 상세
+  const [guide, setGuide] = useState(null)       // POST .../recovery-guide (idempotent 재조회)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailErr, setDetailErr] = useState('')
+
+  // 달력 넘길 때마다 다시 부르지 않도록 넉넉한 범위를 한 번만 조회
+  useEffect(() => {
+    let cancelled = false
+    getRunningSessions('365d')
+      .then((d) => { if (!cancelled) setSessions(d.records || []) })
+      .catch((err) => { if (!cancelled) setListErr(err.message || '기록을 불러오지 못했어요') })
+    return () => { cancelled = true }
+  }, [])
+
+  // 표시 중인 연/월에 해당하는 세션만 "일 → 세션" 맵으로 정리
+  const records = useMemo(() => {
+    const map = {}
+    for (const s of sessions || []) {
+      const d = new Date(s.startedAt)
+      if (d.getFullYear() === cal.year && d.getMonth() === cal.month) map[d.getDate()] = s
+    }
+    return map
+  }, [sessions, cal])
+
   const list = Object.values(records)
-  const bpms = list.filter((r) => r.bpm != null)
+  const bpms = list.filter((r) => r.avgBpm != null && r.avgBpm > 0)
   const rec = records[selDay]
 
   const shift = (n) => () => {
@@ -21,6 +49,31 @@ export default function History() {
     setCal({ year: dt.getFullYear(), month: dt.getMonth() })
     setSelDay(1)
   }
+
+  const openDay = (day) => {
+    setSelDay(day)
+    setSheetOpen(true)
+    const summary = records[day]
+    if (!summary) return
+
+    setDetail(null)
+    setGuide(null)
+    setDetailErr('')
+    setDetailLoading(true)
+
+    getRunningSessionDetail(summary.runningSessionId)
+      .then((d) => {
+        setDetail(d)
+        // 완료된 세션만 회복 가이드가 있다 — idempotent라 다시 불러도 안전
+        if (d.status === 'COMPLETED') {
+          return createRecoveryGuide(summary.runningSessionId).then(setGuide).catch(() => {})
+        }
+      })
+      .catch((err) => setDetailErr(err.message || '기록을 불러오지 못했어요'))
+      .finally(() => setDetailLoading(false))
+  }
+
+  const svg = detail ? routeToSvgPath(detail.routePath) : null
 
   return (
     <>
@@ -36,12 +89,14 @@ export default function History() {
       </div>
 
       <div className="scroll" style={{ paddingBottom: 88 }}>
+        {listErr && <div className="body" style={{ padding: 20, color: 'var(--sale)' }}>{listErr}</div>}
+
         <div className="stat-grid c3 bordered-b section">
           <div className="stat"><div className="k">러닝</div><div className="n">{list.length}회</div></div>
-          <div className="stat"><div className="k">거리</div><div className="n">{list.reduce((a, r) => a + parseFloat(r.km), 0).toFixed(1)}km</div></div>
+          <div className="stat"><div className="k">거리</div><div className="n">{list.reduce((a, r) => a + (r.distanceKm || 0), 0).toFixed(1)}km</div></div>
           <div className="stat">
             <div className="k">평균 심박</div>
-            <div className="n hr">{bpms.length ? Math.round(bpms.reduce((a, r) => a + r.bpm, 0) / bpms.length) : '-'}</div>
+            <div className="n hr">{bpms.length ? Math.round(bpms.reduce((a, r) => a + r.avgBpm, 0) / bpms.length) : '-'}</div>
           </div>
         </div>
 
@@ -59,11 +114,12 @@ export default function History() {
               if (day == null) return <div key={`b${i}`} style={{ height: 46 }} />
               const r = records[day]
               const sel = day === selDay
+              const failed = r && (r.avgBpm == null || r.avgBpm === 0)
               return (
                 <button
                   key={day}
                   className="press"
-                  onClick={() => { setSelDay(day); setSheetOpen(true) }}
+                  onClick={() => openDay(day)}
                   style={{ height: 46, border: 'none', background: 'none', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'inherit' }}
                 >
                   <span
@@ -79,7 +135,7 @@ export default function History() {
                   </span>
                   <span style={{
                     width: 4, height: 4, borderRadius: 'var(--radius-full)',
-                    background: r && !sel ? (r.bpm == null ? 'var(--sale)' : 'var(--ink)') : 'transparent',
+                    background: r && !sel ? (failed ? 'var(--sale)' : 'var(--ink)') : 'transparent',
                   }} />
                 </button>
               )
@@ -99,50 +155,68 @@ export default function History() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', boxShadow: 'var(--elevation-inset-bottom)' }}>
                 <div>
                   <div className="sheet-title">{cal.month + 1}월 {selDay}일</div>
-                  <div className="cap-sm" style={{ marginTop: 4 }}>{rec ? rec.time : ''}</div>
+                  <div className="cap-sm" style={{ marginTop: 4 }}>
+                    {detail ? `${fmtClock(detail.startedAt)} · ${fmtDurationKor(detail.durationSec)}` : ''}
+                  </div>
                 </div>
                 <button className="icon-btn" onClick={close} aria-label="닫기"><XIcon size={18} /></button>
               </div>
 
-              {rec ? (
-                <div style={{ animation: 'agRise .3s ease both' }}>
-                  <RunMap
-                    path={rec.path}
-                    start={rec.path === PATH_B ? [48, 128] : [62, 146]}
-                    caption={`경로 · ${rec.route}`}
-                  />
-
-                  <div className="stat-grid c2 section">
-                    <div className="stat bordered-b"><div className="k">이동 거리</div><div className="n xl">{rec.km}<span className="u">km</span></div></div>
-                    <div className="stat bordered-b"><div className="k">평균 페이스</div><div className="n xl">{rec.pace}</div></div>
-                    <div className="stat">
-                      <div className="k">평균 심박</div>
-                      <div className="n xl hr">{rec.bpm == null ? '측정 실패' : rec.bpm}{rec.bpm != null && <span className="u">BPM</span>}</div>
-                    </div>
-                    <div className="stat"><div className="k">UV 지수</div><div className="n xl">{rec.uv}<span className="u">{rec.uvLabel}</span></div></div>
-                  </div>
-
-                  <div className="soft" style={{ padding: 20, marginTop: 8 }}>
-                    <div className="h-lg">그날의 회복 솔루션</div>
-                    <div className="body" style={{ marginTop: 8 }}>{rec.sol}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', marginTop: 12 }}>
-                      {rec.actions.map(([text, state]) => (
-                        <div key={text} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 0', borderTop: '1px solid var(--hairline)' }}>
-                          <span style={{ font: 'var(--type-body-md)' }}>{text}</span>
-                          <span className="cap" style={{ color: state === '완료' ? 'var(--success)' : state === '진행 중' ? 'var(--ink)' : 'var(--mute)' }}>
-                            {state}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
+              {!rec ? (
                 <div style={{ padding: '44px 20px', textAlign: 'center', animation: 'agRise .3s ease both' }}>
                   <div className="h-lg">이 날은 러닝 기록이 없어요</div>
                   <div className="body" style={{ color: 'var(--mute)', marginTop: 8 }}>점이 찍힌 날짜를 눌러 확인해보세요</div>
                 </div>
-              )}
+              ) : detailLoading ? (
+                <div style={{ padding: '44px 20px', textAlign: 'center' }} className="cap-sm">불러오는 중…</div>
+              ) : detailErr ? (
+                <div style={{ padding: '44px 20px', textAlign: 'center' }}>
+                  <div className="body" style={{ color: 'var(--sale)' }}>{detailErr}</div>
+                </div>
+              ) : detail ? (
+                <div style={{ animation: 'agRise .3s ease both' }}>
+                  <RunMap
+                    path={svg?.d ?? null}
+                    start={svg?.start}
+                    caption={detail.routePath?.length ? `GPS 경로 · 지점 ${detail.routePath.length}개` : '경로 정보 없음'}
+                  />
+
+                  <div className="stat-grid c2 section">
+                    <div className="stat bordered-b"><div className="k">이동 거리</div><div className="n xl">{(detail.distanceKm ?? 0).toFixed(2)}<span className="u">km</span></div></div>
+                    <div className="stat bordered-b"><div className="k">평균 페이스</div><div className="n xl">{fmtPace(detail.durationSec, detail.distanceKm)}</div></div>
+                    <div className="stat">
+                      <div className="k">평균 심박</div>
+                      <div className="n xl hr">
+                        {detail.heartRate?.avgBpm ? detail.heartRate.avgBpm : '측정 실패'}
+                        {detail.heartRate?.avgBpm ? <span className="u">BPM</span> : null}
+                      </div>
+                      {detail.heartRate?.heartRateSource && (
+                        <div className="cap-sm" style={{ marginTop: 2 }}>{SOURCE_LABEL[detail.heartRate.heartRateSource] || detail.heartRate.heartRateSource}</div>
+                      )}
+                    </div>
+                    <div className="stat"><div className="k">UV 지수</div><div className="n xl">{detail.uvIndexAtStart}<span className="u">{uvBand(detail.uvIndexAtStart)}</span></div></div>
+                  </div>
+
+                  {guide ? (
+                    <div className="soft" style={{ padding: 20, marginTop: 8 }}>
+                      <div className="h-lg">그날의 회복 솔루션</div>
+                      <div className="body" style={{ marginTop: 8 }}>{guide.summaryMessage}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', marginTop: 12 }}>
+                        {(guide.actions || []).map((a) => (
+                          <div key={a.type} style={{ padding: '14px 0', borderTop: '1px solid var(--hairline)' }}>
+                            <div style={{ font: 'var(--type-body-md)' }}>{a.title}</div>
+                            <div className="cap-sm" style={{ marginTop: 4, color: 'var(--mute)' }}>{a.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : detail.status !== 'COMPLETED' ? (
+                    <div className="soft" style={{ padding: 20, marginTop: 8 }}>
+                      <div className="cap-sm">아직 진행 중이거나 완료되지 않은 세션이라 회복 솔루션이 없어요</div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div style={{ padding: 20 }}>
                 <button className="btn lg full secondary" onClick={close}>닫기</button>

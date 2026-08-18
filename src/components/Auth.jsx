@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { TERMS } from '../data.js'
+import { signup as signupApi, login as loginApi } from '../api/endpoints.js'
 
 const EMPTY_AGREE = { terms: false, privacy: false, marketing: false }
+
+const API_ERR_MSG = {
+  E4091: '이미 가입된 이메일이에요',
+  E4011: '이메일 또는 비밀번호를 확인해주세요',
+}
 
 export default function Auth({ onLogin, onSignup }) {
   const [mode, setMode] = useState('login') // login | signup
@@ -10,25 +16,39 @@ export default function Auth({ onLogin, onSignup }) {
   const [agree, setAgree] = useState(EMPTY_AGREE)
   const [touched, setTouched] = useState(false)
   const [termsKey, setTermsKey] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [apiErr, setApiErr] = useState('')
 
   const signup = mode === 'signup'
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  const switchMode = (next) => { setMode(next); setTouched(false) }
+  const switchMode = (next) => { setMode(next); setTouched(false); setApiErr('') }
 
   const emailOk = /\S+@\S+\.\S+/.test(form.email)
-  const pwOk = form.password.length >= 4
+  const pwOk = form.password.length >= 8 // 백엔드 요구사항: 8자 이상
   const nickOk = !signup || form.nickname.trim().length > 0
   const confirmOk = !signup || form.password === form.confirm
   const agreedReq = !signup || (agree.terms && agree.privacy)
   const allAgreed = agree.terms && agree.privacy && agree.marketing
   const valid = emailOk && pwOk && nickOk && confirmOk && agreedReq
 
-  const submit = () => {
+  const submit = async () => {
     setTouched(true)
-    if (!valid) return
-    const payload = { nickname: form.nickname, email: form.email }
-    if (signup) onSignup(payload)
-    else onLogin(payload)
+    setApiErr('')
+    if (!valid || busy) return
+    setBusy(true)
+    try {
+      if (signup) {
+        const d = await signupApi(form.email, form.password, form.nickname, agree)
+        onSignup({ nickname: d.nickname, email: d.email })
+      } else {
+        await loginApi(form.email, form.password)
+        onLogin({ email: form.email })
+      }
+    } catch (err) {
+      setApiErr(API_ERR_MSG[err.code] || err.message || '일시적인 오류가 발생했어요. 다시 시도해주세요')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const activeTerms = TERMS.find((t) => t.key === termsKey)
@@ -93,8 +113,8 @@ export default function Auth({ onLogin, onSignup }) {
 
             <div className="field">
               <label htmlFor="password">비밀번호</label>
-              <input id="password" type="password" placeholder="4자 이상 입력" value={form.password} onChange={set('password')} className={err(!pwOk)} />
-              {touched && !pwOk && <div className="err">비밀번호는 4자 이상이어야 해요</div>}
+              <input id="password" type="password" placeholder="8자 이상 입력" value={form.password} onChange={set('password')} className={err(!pwOk)} />
+              {touched && !pwOk && <div className="err">비밀번호는 8자 이상이어야 해요</div>}
             </div>
 
             {signup && (
@@ -144,7 +164,10 @@ export default function Auth({ onLogin, onSignup }) {
             </div>
           )}
 
-          <button className="btn lg full" onClick={submit}>{signup ? '회원가입 완료' : '로그인'}</button>
+          <button className="btn lg full" onClick={submit} disabled={busy}>
+            {busy ? '처리 중…' : signup ? '회원가입 완료' : '로그인'}
+          </button>
+          {apiErr && <div className="err" style={{ textAlign: 'center' }}>{apiErr}</div>}
 
           <div className="cap" style={{ textAlign: 'center' }}>
             {signup ? '이미 계정이 있으신가요?' : '계정이 없으신가요?'}
