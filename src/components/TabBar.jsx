@@ -1,21 +1,23 @@
+import { HomeIcon, HistoryIcon, ProfileIcon } from './Icons.jsx'
+
 const TABS = [
-  { id: 'home', label: '홈' },
-  { id: 'run', label: '러닝' },
-  { id: 'history', label: '기록' },
-  { id: 'profile', label: '프로필' },
+  { id: 'home', label: '홈', Icon: HomeIcon },
+  { id: 'history', label: '기록', Icon: HistoryIcon },
+  { id: 'profile', label: '프로필', Icon: ProfileIcon },
 ]
 
 export default function TabBar({ active, onChange }) {
   return (
     <nav className="tabbar">
-      {TABS.map((t) => (
+      {TABS.map(({ id, label, Icon }) => (
         <button
-          key={t.id}
-          className={`tab ${active === t.id ? 'active' : ''}`}
-          onClick={() => onChange(t.id)}
+          key={id}
+          className={`tab ${active === id ? 'active' : ''}`}
+          onClick={() => onChange(id)}
+          aria-current={active === id ? 'page' : undefined}
         >
-          <span className="tab-box"></span>
-          <span>{t.label}</span>
+          <Icon />
+          <span>{label}</span>
         </button>
       ))}
     </nav>
