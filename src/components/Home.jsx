@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import RingGauge from './RingGauge.jsx'
 import { ChevronRight } from './Icons.jsx'
-import { AVG_SPEED_MPS, UV_BY_HOUR, NOW_HOUR_LABEL } from '../data.js'
+import { UV_BY_HOUR, NOW_HOUR_LABEL } from '../data.js'
 import { fmtElapsed, fmtTodayLabel, fmtClock } from '../utils.js'
 import { getHome, getUvForecast } from '../api/endpoints.js'
+import { reverseGeocode } from '../kakao.js'
 
 const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
 
@@ -14,9 +15,32 @@ function currentHourBucket(hourly) {
   return hourly.find((x) => x.hour === key) || hourly[hourly.length - 1]
 }
 
+const HOUR_BUCKET_STEP = 2
+
+// 연속된 저-UV 버킷을 "00시~06시" 형태의 구간으로 묶는다 (버킷은 2시간 단위).
+function lowUvRanges(hourly, threshold = 4) {
+  if (!hourly?.length) return []
+  const ranges = []
+  let start = null
+  let end = null
+  for (const h of hourly) {
+    const hour = Number(h.hour)
+    if (h.uv <= threshold) {
+      if (start === null) start = hour
+      end = hour + HOUR_BUCKET_STEP
+    } else if (start !== null) {
+      ranges.push([start, end])
+      start = null
+    }
+  }
+  if (start !== null) ranges.push([start, end])
+  return ranges.map(([s, e]) => `${String(s).padStart(2, '0')}시~${String(e).padStart(2, '0')}시`)
+}
+
 export default function Home({ run, onStartRun, onGoHistory }) {
   const [home, setHome] = useState(null)
   const [uv, setUv] = useState(null)
+  const [locationLabel, setLocationLabel] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -48,6 +72,9 @@ export default function Home({ run, onStartRun, onGoHistory }) {
           } catch {
             /* UV 위젯만 비워둔다 */
           }
+          reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+            .then((label) => label && !cancelled && setLocationLabel(label))
+            .catch(() => {}) // 실패해도 '현재 위치 기준' 폴백으로 충분
         },
         () => {},
         { maximumAge: 10 * 60 * 1000, timeout: 8000 },
@@ -59,7 +86,7 @@ export default function Home({ run, onStartRun, onGoHistory }) {
   }, [])
 
   const nowBucket = uv ? currentHourBucket(uv.hourly) : null
-  const lowHours = uv ? uv.hourly.filter((h) => h.uv <= 2).map((h) => `${h.hour}시`) : []
+  const lowRanges = uv ? lowUvRanges(uv.hourly) : []
 
   if (loading) {
     return (
@@ -113,7 +140,7 @@ export default function Home({ run, onStartRun, onGoHistory }) {
         <div style={{ padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
             <div className="h-lg">자외선 예보</div>
-            <div className="cap-sm">기상청 · 현재 위치 기준</div>
+            <div className="cap-sm">기상청 · {locationLabel ?? '현재 위치 기준'}</div>
           </div>
 
           {uv ? (
@@ -140,7 +167,7 @@ export default function Home({ run, onStartRun, onGoHistory }) {
               <div className="soft" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '14px 16px' }}>
                 <div className="cap" style={{ color: 'var(--charcoal)' }}>UV 낮은 시간대</div>
                 <div style={{ font: 'var(--type-body-strong)', color: 'var(--success)' }}>
-                  {lowHours.length ? lowHours.join(', ') : '오늘은 없어요'}
+                  {lowRanges.length ? `${lowRanges.join(', ')}를 추천해요` : '오늘은 없어요'}
                 </div>
               </div>
             </>
