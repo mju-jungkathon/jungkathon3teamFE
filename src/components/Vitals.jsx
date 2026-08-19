@@ -19,7 +19,7 @@ export default function Vitals({ run, setRun }) {
     <div style={{ padding: '24px 20px' }}>
       <div className="display" style={{ fontSize: 44, lineHeight: .95 }}>심박수를<br />확인할까요</div>
       <div className="body" style={{ marginTop: 10 }}>
-        4.8km 러닝을 마쳤어요. 워치가 있다면 워치 데이터를, 없다면 카메라로 측정해요
+        {run.distanceKm.toFixed(1)}km 러닝을 마쳤어요. 워치가 있다면 워치 데이터를, 없다면 카메라로 측정해요
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 }}>

@@ -19,6 +19,7 @@ export const INITIAL_RUN = {
   scanStage: 'idle',  // idle | measuring | done
   scanSec: 0,
   cameraReady: false, // getUserMedia + video.play()까지 끝나야 true
+  torchOn: null,      // null: 아직 시도 안 함, true: 플래시 켜짐, false: torch 미지원/실패
   scanResult: null,   // { avgBpm, maxBpm, hrvMs, signalQuality }
   cool: 300,
   coolRunning: false,

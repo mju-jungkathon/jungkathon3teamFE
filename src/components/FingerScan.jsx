@@ -10,23 +10,54 @@ export default function FingerScan({ run, setRun }) {
   const measuring = run.scanStage === 'measuring'
   const done = run.scanStage === 'done'
   const videoRef = useRef(null)
+  const streamRef = useRef(null)
   const [guide, setGuide] = useState(null)
+  const [previewReady, setPreviewReady] = useState(false)
 
   useEffect(() => {
     getRppgGuide().then(setGuide).catch(() => {})
   }, [])
 
+  // 화면 진입 시 바로 카메라를 켜서 실시간 미리보기를 보여준다(측정 시작 전엔 손가락 위치를 맞추는 용도).
   // 안드로이드 Chrome 기준: 후면 카메라 + 플래시로 손가락 밀착 시 밝기 변화(R 채널)를 12초간 샘플링해 BPM을 계산한다.
-  // 카메라 화면은 손가락으로 완전히 가려지므로 미리보기를 보여줄 필요가 없어 video 엘리먼트는 숨겨둔다.
+  useEffect(() => {
+    let cancelled = false
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(async (stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
+        streamRef.current = stream
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+        if (!cancelled) setPreviewReady(true)
+      })
+      .catch(() => {
+        if (!cancelled) setRun((r) => ({ ...r, error: '카메라 접근 권한이 필요해요' }))
+      })
+
+    return () => {
+      cancelled = true
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
+    }
+  }, [])
+
   useEffect(() => {
     if (!measuring) return
     let cancelled = false
-    let stream = null
     let sampleTimer = null
     let doneTimer = null
     const samples = []
 
     async function pipeline() {
+      const stream = streamRef.current
+      if (!stream) {
+        setRun((r) => ({ ...r, scanStage: 'idle', error: '카메라 접근 권한이 필요해요' }))
+        return
+      }
+
       let rppgSessionId
       try {
         const started = await startRppg(run.sessionId)
@@ -36,33 +67,18 @@ export default function FingerScan({ run, setRun }) {
         return
       }
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      } catch {
-        if (!cancelled) setRun((r) => ({ ...r, scanStage: 'idle', error: '카메라 접근 권한이 필요해요' }))
-        return
-      }
-      if (cancelled) {
-        stream.getTracks().forEach((t) => t.stop())
-        return
-      }
-
       const track = stream.getVideoTracks()[0]
+      let torchOn = true
       try {
         await track.applyConstraints({ advanced: [{ torch: true }] })
       } catch {
         // 플래시 미지원 기기(iOS Safari 등) — 손가락을 밝은 곳에 대는 것으로 대체, 측정은 계속 진행
+        torchOn = false
       }
+      if (cancelled) return
+      setRun((r) => ({ ...r, cameraReady: true, torchOn }))
 
       const video = videoRef.current
-      video.srcObject = stream
-      await video.play()
-      if (cancelled) {
-        stream.getTracks().forEach((t) => t.stop())
-        return
-      }
-      setRun((r) => ({ ...r, cameraReady: true }))
-
       const canvas = document.createElement('canvas')
       canvas.width = 40
       canvas.height = 40
@@ -78,8 +94,11 @@ export default function FingerScan({ run, setRun }) {
 
       doneTimer = setTimeout(async () => {
         clearInterval(sampleTimer)
-        track.stop()
-        stream.getTracks().forEach((t) => t.stop())
+        try {
+          await track.applyConstraints({ advanced: [{ torch: false }] })
+        } catch {
+          // 무시 — 애초에 torch 미지원이면 끌 것도 없음
+        }
         if (cancelled) return
 
         const result = computeBpmResult(samples, SAMPLE_FPS)
@@ -97,12 +116,22 @@ export default function FingerScan({ run, setRun }) {
       cancelled = true
       clearInterval(sampleTimer)
       clearTimeout(doneTimer)
-      stream?.getTracks().forEach((t) => t.stop())
     }
   }, [measuring])
 
   const result = run.scanResult
-  const { cameraReady } = run
+  const { cameraReady, torchOn } = run
+
+  // 측정 전에도 플래시는 항상 꺼져 있으므로 미리보기 단계부터 "밝은 곳에서" 안내를 보여준다.
+  const cameraLabel = !previewReady
+    ? '카메라 준비 중…'
+    : !measuring
+      ? '카메라 미리보기 · 플래시 꺼짐 · 밝은 곳에서 촬영해주세요'
+      : !cameraReady
+        ? '카메라 준비 중…'
+        : torchOn
+          ? '카메라 · 플래시 켜짐'
+          : '카메라 · 플래시 꺼짐 · 밝은 곳에서 측정해주세요'
 
   return (
     <div style={{ padding: '24px 20px' }}>
@@ -115,51 +144,42 @@ export default function FingerScan({ run, setRun }) {
           : (guide?.instruction ?? '약 12초간 측정하며, 측정 중에는 손가락을 떼지 마세요')}
       </div>
 
-      {!done && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: measuring ? 'var(--ink)' : 'var(--soft-cloud)' }}>
-            {/* 측정 중엔 실제 카메라 피드를 보여준다 — 손가락이 렌즈를 덮으면 화면이 어두워지는 게 정상(밀착 확인용) */}
-            <video
-              ref={videoRef}
-              muted
-              playsInline
-              style={{ display: measuring ? 'block' : 'none', width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+      {/* done이어도 video 엘리먼트를 계속 마운트해둔다 — 언마운트하면 srcObject가 끊겨 재측정 시 미리보기가 검게 멈춘다 */}
+      <div style={{ marginTop: 20, display: done ? 'none' : 'block' }}>
+        <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: previewReady ? 'var(--ink)' : 'var(--soft-cloud)' }}>
+          {/* 화면 진입 시부터 실시간 카메라 피드를 보여준다 — 손가락이 렌즈를 덮으면 화면이 어두워지는 게 정상(밀착 확인용) */}
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            style={{ display: previewReady ? 'block' : 'none', width: '100%', height: '100%', objectFit: 'cover' }}
+          />
 
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-              {/* 손가락을 올려둘 위치를 알려주는 가이드 링 */}
-              <div style={{
-                width: 84, height: 84, borderRadius: 'var(--radius-full)',
-                border: `2px dashed ${measuring ? 'var(--canvas)' : 'var(--hairline)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-full)', background: measuring ? 'var(--sale)' : 'var(--hairline)' }} />
-              </div>
-              {!measuring && <div className="cap" style={{ color: 'var(--mute)' }}>카메라 미리보기 · 플래시 꺼짐</div>}
-            </div>
-
-            {measuring && (
-              <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '6px 12px', background: 'rgba(0,0,0,.4)' }}>
-                <div className="cap" style={{ color: 'var(--canvas)' }}>
-                  {cameraReady ? '카메라 · 플래시 켜짐' : '카메라 준비 중…'}
-                </div>
-              </div>
-            )}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* 손가락을 올려둘 위치를 알려주는 가이드 링 */}
+            <div style={{
+              width: 84, height: 84, borderRadius: 'var(--radius-full)',
+              border: `2px dashed ${measuring ? 'var(--canvas)' : 'var(--hairline)'}`,
+            }} />
           </div>
 
-          {measuring && (
-            <div style={{ marginTop: 14 }}>
-              <div style={{ height: 4, background: 'var(--hairline-soft)' }}>
-                <div style={{ width: `${Math.round((run.scanSec / SCAN_SECONDS) * 100)}%`, height: '100%', background: 'var(--ink)', transition: 'width .4s linear' }} />
-              </div>
-              <div className="cap-sm" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                <span>{Math.max(0, SCAN_SECONDS - run.scanSec)}초 남음</span>
-                <span>초당 {SAMPLE_FPS}프레임 수집</span>
-              </div>
-            </div>
-          )}
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '6px 12px', background: 'rgba(0,0,0,.4)' }}>
+            <div className="cap" style={{ color: 'var(--canvas)' }}>{cameraLabel}</div>
+          </div>
         </div>
-      )}
+
+        {measuring && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ height: 4, background: 'var(--hairline-soft)' }}>
+              <div style={{ width: `${Math.round((run.scanSec / SCAN_SECONDS) * 100)}%`, height: '100%', background: 'var(--ink)', transition: 'width .4s linear' }} />
+            </div>
+            <div className="cap-sm" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+              <span>{Math.max(0, SCAN_SECONDS - run.scanSec)}초 남음</span>
+              <span>초당 {SAMPLE_FPS}프레임 수집</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {done && result && (
         <div style={{ marginTop: 20 }}>
