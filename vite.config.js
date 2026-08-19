@@ -9,6 +9,13 @@ const backendProxy = {
     target: 'https://aftergrow.duckdns.org',
     changeOrigin: true,
     rewrite: (path) => path.replace(/^\/api/, ''),
+    // LAN IP(예: --host로 폰 접속)로 열면 브라우저가 그 IP를 Origin으로 보내는데,
+    // 백엔드 CORS 허용 목록에 없어 403 "Invalid CORS request"로 막힌다 — 배포 오리진으로 위장한다.
+    configure: (proxy) => {
+      proxy.on('proxyReq', (proxyReq) => {
+        proxyReq.setHeader('origin', 'https://aftergrow.vercel.app')
+      })
+    },
   },
 }
 
