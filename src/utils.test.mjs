@@ -39,24 +39,41 @@ test('intensityFromPace', () => {
 
 test('fmtNextRunLine', () => {
   assert.equal(fmtNextRunLine(null), null)
+
   assert.deepEqual(
-    fmtNextRunLine({ recommendedTime: null, reason: '계산 불가' }),
-    { text: '계산 불가', tone: 'mute' },
+    fmtNextRunLine({ recommendedRanges: [], reason: '계산 불가' }),
+    { text: '계산 불가', tone: 'mute', caption: null },
   )
+
   const inOneHour = new Date(Date.now() + 3600_000).toISOString()
+  const inTwoHours = new Date(Date.now() + 2 * 3600_000).toISOString()
+  const today = fmtNextRunLine({
+    recommendedRanges: [{ startTime: inOneHour, endTime: inTwoHours, expectedUvIndex: 1 }],
+    reason: 'r',
+  })
+  assert.equal(today.text, '오늘 러닝을 추천해요!')
+  assert.equal(today.tone, 'ok')
+  assert.ok(today.caption.includes('· r'), today.caption)
+
+  const yesterdayRange = {
+    startTime: new Date(Date.now() - 25 * 3600_000).toISOString(),
+    endTime: new Date(Date.now() - 24 * 3600_000).toISOString(),
+    expectedUvIndex: 1,
+  }
   assert.deepEqual(
-    fmtNextRunLine({ recommendedTime: inOneHour, reason: 'r', expectedUvIndex: 1 }),
-    { text: '오늘 러닝을 추천해요!', tone: 'ok' },
+    fmtNextRunLine({ recommendedRanges: [yesterdayRange], reason: 'r' }),
+    { text: '다음 러닝 후 새 추천을 받아보세요', tone: 'mute', caption: null },
   )
-  const yesterday = new Date(Date.now() - 24 * 3600_000).toISOString()
-  assert.deepEqual(
-    fmtNextRunLine({ recommendedTime: yesterday, reason: 'r' }),
-    { text: '다음 러닝 후 새 추천을 받아보세요', tone: 'mute' },
-  )
+
   const inThreeDays = new Date(Date.now() + 3 * 24 * 3600_000)
-  const result = fmtNextRunLine({ recommendedTime: inThreeDays.toISOString(), reason: 'r' })
-  assert.equal(result.tone, 'ok')
-  assert.ok(result.text.endsWith('가 좋아요'), result.text)
+  const laterThatDay = new Date(inThreeDays.getTime() + 3600_000)
+  const future = fmtNextRunLine({
+    recommendedRanges: [{ startTime: inThreeDays.toISOString(), endTime: laterThatDay.toISOString(), expectedUvIndex: 1 }],
+    reason: 'r',
+  })
+  assert.equal(future.tone, 'ok')
+  assert.equal(future.caption, 'r')
+  assert.ok(future.text.endsWith('가 좋아요'), future.text)
 })
 
 test('monthGrid — 2026년 8월은 토요일 시작, 31일까지', () => {

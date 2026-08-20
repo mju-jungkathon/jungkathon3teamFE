@@ -98,27 +98,43 @@ export function fmtTodayLabel(d = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`
 }
 
-// ISO 문자열을 "8/21(금) 오전 7시" 형식으로
-export function fmtRecommendedTime(iso) {
-  const d = new Date(iso)
+// 같은 날짜의 구간들을 날짜 접두어 하나로 묶는다 — "8/21(금) 0시~6시, 12시~14시" (오늘이면 접두어 생략)
+function fmtRangesLabel(active, now) {
   const days = ['일', '월', '화', '수', '목', '금', '토']
-  const h = d.getHours()
-  const ampm = h < 12 ? '오전' : '오후'
-  const h12 = h % 12 || 12
-  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]}) ${ampm} ${h12}시`
+  const groups = []
+  for (const r of active) {
+    const start = new Date(r.startTime)
+    const dateKey = start.toDateString()
+    const hour = `${start.getHours()}시~${new Date(r.endTime).getHours()}시`
+    const last = groups[groups.length - 1]
+    if (last?.dateKey === dateKey) last.hours.push(hour)
+    else groups.push({ dateKey, date: start, isToday: dateKey === now.toDateString(), hours: [hour] })
+  }
+  return groups
+    .map((g) => (g.isToday ? g.hours.join(', ') : `${g.date.getMonth() + 1}/${g.date.getDate()}(${days[g.date.getDay()]}) ${g.hours.join(', ')}`))
+    .join(', ')
 }
 
-// next-run-suggestion 응답을 화면에 표시할 { text, tone } 한 줄로 변환.
-// 추천일이 오늘이면 안내 문구로, 이미 지났으면 새 추천을 받으라는 문구로 바뀐다.
+// next-run-suggestion 응답을 화면에 표시할 { text, tone, caption } 한 줄로 변환.
+// recommendedRanges 중 아직 안 지난 구간만 남겨서, 그 중 첫 구간이 오늘이면 안내 문구로,
+// 전부 지났으면 새 추천을 받으라는 문구로 바뀐다.
 export function fmtNextRunLine(suggestion) {
   if (!suggestion) return null
-  if (!suggestion.recommendedTime) return { text: suggestion.reason, tone: 'mute' }
-  const rec = new Date(suggestion.recommendedTime)
+  const ranges = suggestion.recommendedRanges ?? []
   const now = new Date()
-  const sameDay = rec.getFullYear() === now.getFullYear() && rec.getMonth() === now.getMonth() && rec.getDate() === now.getDate()
-  if (sameDay) return { text: '오늘 러닝을 추천해요!', tone: 'ok' }
-  if (rec < now) return { text: '다음 러닝 후 새 추천을 받아보세요', tone: 'mute' }
-  return { text: `${fmtRecommendedTime(suggestion.recommendedTime)}가 좋아요`, tone: 'ok' }
+  const active = ranges.filter((r) => new Date(r.endTime) > now)
+
+  if (!active.length) {
+    return ranges.length
+      ? { text: '다음 러닝 후 새 추천을 받아보세요', tone: 'mute', caption: null }
+      : { text: suggestion.reason, tone: 'mute', caption: null }
+  }
+
+  const label = fmtRangesLabel(active, now)
+  const startsToday = new Date(active[0].startTime).toDateString() === now.toDateString()
+  return startsToday
+    ? { text: '오늘 러닝을 추천해요!', tone: 'ok', caption: `${label} · ${suggestion.reason}` }
+    : { text: `${label}가 좋아요`, tone: 'ok', caption: suggestion.reason }
 }
 
 const NEXT_RUN_KEY = 'aftergrow.nextRunSuggestion'

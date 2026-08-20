@@ -82,10 +82,8 @@ export default function Solution({ run, setRun }) {
               다음 추천 러닝일
               <span className={`v ${nextRunLine.tone}`}>{nextRunLine.text}</span>
             </div>
-            {nextRun.recommendedTime && (
-              <div className="cap-sm" style={{ marginTop: 2 }}>
-                {nextRun.reason}{nextRun.expectedUvIndex != null ? ` · UV 지수 ${nextRun.expectedUvIndex}` : ''}
-              </div>
+            {nextRunLine.caption && (
+              <div className="cap-sm" style={{ marginTop: 2 }}>{nextRunLine.caption}</div>
             )}
           </div>
         )}
