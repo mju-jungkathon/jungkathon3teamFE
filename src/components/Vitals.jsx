@@ -50,7 +50,7 @@ export default function Vitals({ run, setRun }) {
       {run.source === 'rppg' && (
         <div className="soft" style={{ padding: 18, marginTop: 22 }}>
           <div style={{ font: 'var(--type-body-strong)' }}>손가락으로 측정할게요</div>
-          <div className="body" style={{ marginTop: 6 }}>후면 카메라와 플래시에 손가락을 밀착해 약 12초간 측정해요</div>
+          <div className="body" style={{ marginTop: 6 }}>후면 카메라와 플래시에서 5~10cm 거리를 유지한 채 약 12초간 측정해요</div>
         </div>
       )}
     </div>

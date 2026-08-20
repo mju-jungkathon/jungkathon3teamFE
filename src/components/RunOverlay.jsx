@@ -93,7 +93,7 @@ function cta(run, setRun, onComplete) {
       return { label: '측정 방식을 선택해주세요', disabled: true, go: () => {} }
     case 'scan':
       if (run.scanStage === 'idle') return { label: '측정 시작', go: () => setRun((r) => ({ ...r, scanStage: 'measuring', scanSec: 0, cameraReady: false, error: null })) }
-      if (run.scanStage === 'measuring') return { label: '측정 중 · 손가락을 떼지 마세요', disabled: true, go: () => {} }
+      if (run.scanStage === 'measuring') return { label: '측정 중 · 거리를 유지해주세요', disabled: true, go: () => {} }
       // CLAUDE.md: signalQuality:'POOR'는 에러가 아니라 재측정 유도 UI로 분기 — 결과가 좋아도 재측정은 항상 선택 가능하게 둔다.
       return {
         label: '솔루션 확인하기',

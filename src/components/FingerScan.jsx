@@ -19,7 +19,7 @@ export default function FingerScan({ run, setRun }) {
   }, [])
 
   // 화면 진입 시 바로 카메라를 켜서 실시간 미리보기를 보여준다(측정 시작 전엔 손가락 위치를 맞추는 용도).
-  // 안드로이드 Chrome 기준: 후면 카메라 + 플래시로 손가락 밀착 시 밝기 변화(R 채널)를 12초간 샘플링해 BPM을 계산한다.
+  // 안드로이드 Chrome 기준: 후면 카메라 + 플래시에서 5~10cm 거리를 둔 손가락의 밝기 변화(R 채널)를 12초간 샘플링해 BPM을 계산한다.
   useEffect(() => {
     let cancelled = false
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -72,7 +72,7 @@ export default function FingerScan({ run, setRun }) {
       try {
         await track.applyConstraints({ advanced: [{ torch: true }] })
       } catch {
-        // 플래시 미지원 기기(iOS Safari 등) — 손가락을 밝은 곳에 대는 것으로 대체, 측정은 계속 진행
+        // 플래시 미지원 기기(iOS Safari 등) — 밝은 곳에서 거리를 유지하는 것으로 대체, 측정은 계속 진행
         torchOn = false
       }
       if (cancelled) return
@@ -136,18 +136,18 @@ export default function FingerScan({ run, setRun }) {
   return (
     <div style={{ padding: '24px 20px' }}>
       <div className="display" style={{ fontSize: 40, lineHeight: .95, whiteSpace: 'pre-line' }}>
-        {done ? '측정이 끝났어요' : '카메라에\n손가락을 대주세요'}
+        {done ? '측정이 끝났어요' : '카메라에서\n5~10cm 띄워주세요'}
       </div>
       <div className="body" style={{ marginTop: 10 }}>
         {done
           ? (result?.signalQuality === 'GOOD' ? '심박수를 확인했어요' : '신호가 약해요 · 다시 측정해보세요')
-          : (guide?.instruction ?? '약 12초간 측정하며, 측정 중에는 손가락을 떼지 마세요')}
+          : (guide?.instruction ?? '약 12초간 측정하며, 측정 중에는 카메라와 5~10cm 거리를 유지해주세요')}
       </div>
 
       {/* done이어도 video 엘리먼트를 계속 마운트해둔다 — 언마운트하면 srcObject가 끊겨 재측정 시 미리보기가 검게 멈춘다 */}
       <div style={{ marginTop: 20, display: done ? 'none' : 'block' }}>
         <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: previewReady ? 'var(--ink)' : 'var(--soft-cloud)' }}>
-          {/* 화면 진입 시부터 실시간 카메라 피드를 보여준다 — 손가락이 렌즈를 덮으면 화면이 어두워지는 게 정상(밀착 확인용) */}
+          {/* 화면 진입 시부터 실시간 카메라 피드를 보여준다 — 가이드 링에 손가락 위치를 맞추는 용도 */}
           <video
             ref={videoRef}
             muted
