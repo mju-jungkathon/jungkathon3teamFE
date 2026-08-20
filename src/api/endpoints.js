@@ -111,6 +111,10 @@ export const startCooldownTimer = (guideId) =>
   api.post(`/recovery-guides/${guideId}/cooldown-timer/start`)
 export const completeRunning = (sessionId) => api.post(`/running-sessions/${sessionId}/complete`)
 
+// 항상 200 — 추천 불가 시에도 recommendedTime:null + reason 메시지로 degrade됨(에러 아님).
+export const getNextRunSuggestion = (guideId) =>
+  api.get(`/recovery-guides/${guideId}/next-run-suggestion`)
+
 // --- 6. 프로필 ---
 export const getProfile = () => api.get('/users/me/profile')
 export const updateGoal = (goal) => api.patch('/users/me/goal', goal)

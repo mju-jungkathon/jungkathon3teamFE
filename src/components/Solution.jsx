@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react'
-import { fmtElapsed } from '../utils.js'
-import { createRecoveryGuide, startCooldownTimer } from '../api/endpoints.js'
+import { fmtElapsed, fmtNextRunLine, saveNextRunSuggestion } from '../utils.js'
+import { createRecoveryGuide, startCooldownTimer, getNextRunSuggestion } from '../api/endpoints.js'
 
 export default function Solution({ run, setRun }) {
   const { cool, coolRunning, guide } = run
   const coolTotal = guide?.cooldownTimerSec ?? 300
   const [retryTick, setRetryTick] = useState(0)
+  const [nextRun, setNextRun] = useState(null)
+
+  // 회복 가이드가 생겨야 recoveryGuideId가 나오므로 그 이후에만 조회. 실패하면 위젯을 그냥 숨긴다.
+  useEffect(() => {
+    if (!guide?.recoveryGuideId) return
+    getNextRunSuggestion(guide.recoveryGuideId)
+      .then((s) => {
+        setNextRun(s)
+        saveNextRunSuggestion(s) // 홈 화면은 recoveryGuideId가 없어 여기서 저장해둔 값을 읽는다
+      })
+      .catch(() => {})
+  }, [guide?.recoveryGuideId])
 
   // 5.1(idempotent) → 5.2 순서. 재진입해도 서버가 기존 가이드를 그대로 돌려줘 안전.
   // 가이드 생성이 실패하면(예: 서버 500) retryTick으로 재시도할 수 있게 열어둔다 — 실패해도 화면이 막히지 않도록.
@@ -29,6 +41,7 @@ export default function Solution({ run, setRun }) {
 
   const ctaLabel = cool === 0 ? '다시 시작' : coolRunning ? '일시정지' : cool < coolTotal ? '이어서 시작' : '타이머 시작'
   const exposureMin = Math.round(run.elapsed / 60)
+  const nextRunLine = nextRun && fmtNextRunLine(nextRun)
 
   return (
     <div>
@@ -62,6 +75,20 @@ export default function Solution({ run, setRun }) {
             <div className="cap" style={{ marginTop: 4 }}>{action.description}</div>
           </div>
         ))}
+
+        {nextRunLine && (
+          <div style={{ padding: '18px 0 0' }}>
+            <div className="row" style={{ borderTop: 'none', paddingBottom: 0 }}>
+              다음 추천 러닝일
+              <span className={`v ${nextRunLine.tone}`}>{nextRunLine.text}</span>
+            </div>
+            {nextRun.recommendedTime && (
+              <div className="cap-sm" style={{ marginTop: 2 }}>
+                {nextRun.reason}{nextRun.expectedUvIndex != null ? ` · UV 지수 ${nextRun.expectedUvIndex}` : ''}
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '26px 0 8px' }}>
           <div className="cap-sm">쿨다운 타이머</div>

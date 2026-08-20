@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import RingGauge from './RingGauge.jsx'
 import { ChevronRight } from './Icons.jsx'
 import { UV_BY_HOUR, NOW_HOUR_LABEL } from '../data.js'
-import { fmtElapsed, fmtTodayLabel, fmtClock, currentHourBucket } from '../utils.js'
+import { fmtElapsed, fmtTodayLabel, fmtClock, currentHourBucket, fmtNextRunLine, loadNextRunSuggestion } from '../utils.js'
 import { getHome, getUvForecast } from '../api/endpoints.js'
 import { reverseGeocode } from '../kakao.js'
 
@@ -36,6 +36,7 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
   const [locationLabel, setLocationLabel] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [nextRun] = useState(() => loadNextRunSuggestion())
 
   const hasSession = run.step !== 'start'
   const distanceKm = run.distanceKm.toFixed(2)
@@ -83,6 +84,7 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
 
   const nowBucket = uv ? currentHourBucket(uv.hourly) : null
   const lowRanges = uv ? lowUvRanges(uv.hourly) : []
+  const nextRunLine = nextRun && fmtNextRunLine(nextRun)
 
   if (loading) {
     return (
@@ -170,6 +172,15 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
           ) : (
             <div className="soft" style={{ padding: '14px 16px' }} >
               <div className="cap-sm">위치 권한을 허용하면 시간대별 UV 예보를 볼 수 있어요</div>
+            </div>
+          )}
+
+          {nextRunLine && (
+            <div className="soft" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '14px 16px' }}>
+              <div className="cap" style={{ color: 'var(--charcoal)' }}>다음 추천 러닝일</div>
+              <div style={{ font: 'var(--type-body-strong)', color: nextRunLine.tone === 'ok' ? 'var(--success)' : 'var(--mute)' }}>
+                {nextRunLine.text}
+              </div>
             </div>
           )}
 

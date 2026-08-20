@@ -98,3 +98,37 @@ export function fmtTodayLabel(d = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`
 }
 
+// ISO 문자열을 "8/21(금) 오전 7시" 형식으로
+export function fmtRecommendedTime(iso) {
+  const d = new Date(iso)
+  const days = ['일', '월', '화', '수', '목', '금', '토']
+  const h = d.getHours()
+  const ampm = h < 12 ? '오전' : '오후'
+  const h12 = h % 12 || 12
+  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]}) ${ampm} ${h12}시`
+}
+
+// next-run-suggestion 응답을 화면에 표시할 { text, tone } 한 줄로 변환.
+// 추천일이 오늘이면 안내 문구로, 이미 지났으면 새 추천을 받으라는 문구로 바뀐다.
+export function fmtNextRunLine(suggestion) {
+  if (!suggestion) return null
+  if (!suggestion.recommendedTime) return { text: suggestion.reason, tone: 'mute' }
+  const rec = new Date(suggestion.recommendedTime)
+  const now = new Date()
+  const sameDay = rec.getFullYear() === now.getFullYear() && rec.getMonth() === now.getMonth() && rec.getDate() === now.getDate()
+  if (sameDay) return { text: '오늘 러닝을 추천해요!', tone: 'ok' }
+  if (rec < now) return { text: '다음 러닝 후 새 추천을 받아보세요', tone: 'mute' }
+  return { text: `${fmtRecommendedTime(suggestion.recommendedTime)}가 좋아요`, tone: 'ok' }
+}
+
+const NEXT_RUN_KEY = 'aftergrow.nextRunSuggestion'
+
+// Home 화면은 recoveryGuideId가 없어 API를 직접 못 부른다 — 회복 가이드 화면에서 받은 값을 여기 저장해두고 읽는다.
+export function saveNextRunSuggestion(suggestion) {
+  try { globalThis.localStorage?.setItem(NEXT_RUN_KEY, JSON.stringify(suggestion)) } catch {}
+}
+
+export function loadNextRunSuggestion() {
+  try { return JSON.parse(globalThis.localStorage?.getItem(NEXT_RUN_KEY) || 'null') } catch { return null }
+}
+
