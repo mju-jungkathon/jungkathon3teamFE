@@ -141,7 +141,7 @@ export default function FingerScan({ run, setRun }) {
       <div className="body" style={{ marginTop: 10 }}>
         {done
           ? (result?.signalQuality === 'GOOD' ? '심박수를 확인했어요' : '신호가 약해요 · 다시 측정해보세요')
-          : (guide?.instruction ?? '약 12초간 측정하며, 측정 중에는 카메라와 5~10cm 거리를 유지해주세요')}
+          : '후면 카메라와 플래시에 손가락을 5~10cm로 위치시키고 약 12초간 측정해요'}
       </div>
 
       {/* done이어도 video 엘리먼트를 계속 마운트해둔다 — 언마운트하면 srcObject가 끊겨 재측정 시 미리보기가 검게 멈춘다 */}
