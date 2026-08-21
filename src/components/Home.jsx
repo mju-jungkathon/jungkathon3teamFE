@@ -11,7 +11,7 @@ const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
 const HOUR_BUCKET_STEP = 2
 
 // 연속된 저-UV 버킷을 "00시~06시" 형태의 구간으로 묶는다 (버킷은 2시간 단위).
-function lowUvRanges(hourly, threshold = 4) {
+function lowUvRanges(hourly, threshold = 2) {
   if (!hourly?.length) return []
   const ranges = []
   let start = null

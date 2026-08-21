@@ -98,20 +98,25 @@ export function fmtTodayLabel(d = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`
 }
 
-// 같은 날짜의 구간들을 날짜 접두어 하나로 묶는다 — "8/21(금) 0시~6시, 12시~14시" (오늘이면 접두어 생략)
-function fmtRangesLabel(active, now) {
+// 같은 날짜의 구간들을 날짜 접두어 하나로 묶는다 — "8/21(금) 0시~6시, 12시~14시" (오늘도 날짜를 always 붙여 순서를 날짜→시간→시간으로 통일)
+function fmtRangesLabel(active) {
   const days = ['일', '월', '화', '수', '목', '금', '토']
   const groups = []
   for (const r of active) {
     const start = new Date(r.startTime)
     const dateKey = start.toDateString()
-    const hour = `${start.getHours()}시~${new Date(r.endTime).getHours()}시`
+    // endTime이 다음 날로 넘어가면 종료 시각에도 날짜를 붙여 며칠짜리 구간인지 드러낸다.
+    const end = new Date(r.endTime)
+    const endLabel = end.toDateString() === dateKey
+      ? `${end.getHours()}시`
+      : `${end.getMonth() + 1}/${end.getDate()}(${days[end.getDay()]}) ${end.getHours()}시`
+    const hour = `${start.getHours()}시~${endLabel}`
     const last = groups[groups.length - 1]
     if (last?.dateKey === dateKey) last.hours.push(hour)
-    else groups.push({ dateKey, date: start, isToday: dateKey === now.toDateString(), hours: [hour] })
+    else groups.push({ dateKey, date: start, hours: [hour] })
   }
   return groups
-    .map((g) => (g.isToday ? g.hours.join(', ') : `${g.date.getMonth() + 1}/${g.date.getDate()}(${days[g.date.getDay()]}) ${g.hours.join(', ')}`))
+    .map((g) => `${g.date.getMonth() + 1}/${g.date.getDate()}(${days[g.date.getDay()]}) ${g.hours.join(', ')}`)
     .join(', ')
 }
 
@@ -130,7 +135,7 @@ export function fmtNextRunLine(suggestion) {
       : { text: suggestion.reason, tone: 'mute', caption: null }
   }
 
-  const label = fmtRangesLabel(active, now)
+  const label = fmtRangesLabel(active)
   const startsToday = new Date(active[0].startTime).toDateString() === now.toDateString()
   return startsToday
     ? { text: '오늘 러닝을 추천해요!', tone: 'ok', caption: `${label} · ${suggestion.reason}` }
