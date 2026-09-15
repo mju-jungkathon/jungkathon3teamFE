@@ -165,11 +165,16 @@ src/
 │   ├── client.js
 │   ├── tokenStore.js
 │   └── {domain}.js         auth.js, running.js, heartRate.js, recovery.js, profile.js
+├── importRun.js            소급 등록(기록 추가하기) API 시퀀스 — UI 없는 순수 로직
+├── health.js               capacitor-health(HealthKit) 연동. 웹은 WEB_MOCK 유지
 └── components/
     ├── RingGauge.jsx        시그니처 이중 링 게이지 (UV + 심박)
+    ├── AddRecord.jsx        기록 탭 "＋ 기록 추가하기" 진입 Sheet (워치 가져오기 / 직접 입력 선택)
+    ├── ImportWatchRun.jsx   애플워치 최근 워크아웃 목록에서 선택해 소급 등록
+    ├── ManualRunForm.jsx    직접 입력 폼 + 선택적 rPPG 측정(FingerScan 재사용)
     └── ...                  화면 컴포넌트들
 docs/
-├── API.md                  ⭐ 백엔드 전체 명세 원본 — 항상 최신 유지
+├── API_명세.md              ⭐ 백엔드 전체 명세 원본 — 항상 최신 유지
 ```
 
 ## 환경변수
@@ -190,6 +195,12 @@ VITE_API_BASE_URL=
 - API 연동: `src/api/` 클라이언트 세팅 완료 (`client.js` 공통 껍데기·토큰·refresh 재시도,
   `endpoints.js` 25개 함수). 화면 컴포넌트 배선은 미착수 — 다음 작업
 - PWA: 완료 (`vite-plugin-pwa`, 매니페스트, 아이콘, iOS 메타 태그)
+- 기록 추가하기: 완료. 기록 탭에서 이미 끝난 러닝을 "생성 → 즉시 종료" 2연타로 소급 등록한다
+  (새 백엔드 API 없음, `src/importRun.js`). 애플워치 워크아웃 가져오기(`ImportWatchRun.jsx`,
+  `health.js`의 `queryRecentRunningWorkouts`)는 네이티브 iOS 빌드에서만 동작 — 웹 빌드는 타일을
+  비활성 처리한다(`Capacitor.isNativePlatform()`). 직접 입력(`ManualRunForm.jsx`)은 심박수를
+  입력받지 않고 선택적 rPPG 측정을 유도하며, 러닝 종료~측정 시각 경과에 따라 신뢰도를
+  클라이언트에서만 판정한다(`utils.js`의 `heartRateTrustLevel` — 서버에는 이 필드가 없음)
 
 ## 코드 컨벤션
 

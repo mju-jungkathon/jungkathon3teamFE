@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Sheet from './Sheet.jsx'
 import RunMap from './RunMap.jsx'
-import { ChevronLeft, ChevronRight, XIcon } from '../constants/Icons.jsx'
+import AddRecord from './AddRecord.jsx'
+import { ChevronLeft, ChevronRight, PlusIcon, XIcon } from '../constants/Icons.jsx'
 import { WEEKDAYS } from '../data.js'
 import { monthGrid, fmtPace, fmtClock, fmtDurationKor, uvBand, isZombieSession } from '../utils.js'
 import { getRunningSessions, getRunningSessionDetail, createRecoveryGuide } from '../api/endpoints.js'
@@ -16,6 +17,7 @@ export default function History() {
 
   const [sessions, setSessions] = useState(null) // GET /running-sessions 목록 원본
   const [listErr, setListErr] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
 
   const [selected, setSelected] = useState(null) // 목록에서 고른 세션 요약 · null이면 그날의 목록 화면
   const [detail, setDetail] = useState(null)     // GET /running-sessions/{id} 상세
@@ -23,19 +25,30 @@ export default function History() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailErr, setDetailErr] = useState('')
 
-  // 달력 넘길 때마다 다시 부르지 않도록 넉넉한 범위를 한 번만 조회
-  useEffect(() => {
-    let cancelled = false
-    getRunningSessions('365d')
+  // 마운트 시 + "기록 추가하기" 등록 후 재조회에서 공용으로 쓴다.
+  const loadSessions = useCallback(() => {
+    return getRunningSessions('365d')
       .then((d) => {
         // E4090(이미 진행 중인 세션) 충돌을 풀려고 앱이 자동으로 강제 종료한 좀비 세션(distanceKm 0,
         // COMPLETED 아님)은 사용자가 실제로 뛴 기록이 아니므로 기록 화면에서 제외한다.
         const records = (d.records || []).filter((r) => !isZombieSession(r))
-        if (!cancelled) setSessions(records)
+        setSessions(records)
       })
-      .catch((err) => { if (!cancelled) setListErr(err.message || '기록을 불러오지 못했어요') })
-    return () => { cancelled = true }
+      .catch((err) => setListErr(err.message || '기록을 불러오지 못했어요'))
   }, [])
+
+  // 달력 넘길 때마다 다시 부르지 않도록 넉넉한 범위를 한 번만 조회
+  useEffect(() => {
+    loadSessions()
+  }, [loadSessions])
+
+  const onImported = (startedAtIso) => {
+    const d = new Date(startedAtIso)
+    setCal({ year: d.getFullYear(), month: d.getMonth() })
+    setSelDay(d.getDate())
+    setAddOpen(false)
+    loadSessions()
+  }
 
   // 표시 중인 연/월에 해당하는 세션만 "일 → 세션 목록"(하루에 여러 번 뛴 경우 대비) 맵으로 정리
   const records = useMemo(() => {
@@ -98,7 +111,7 @@ export default function History() {
         </div>
       </div>
 
-      <div className="scroll" style={{ paddingBottom: 88, boxShadow: GRAY_100 }}>
+      <div className="scroll" style={{ paddingBottom: 186, boxShadow: GRAY_100 }}>
         {listErr && <div className="body" style={{ padding: 20, color: 'var(--sale)' }}>{listErr}</div>}
 
         <div className="stat-grid c3 bordered-b section">
@@ -165,6 +178,17 @@ export default function History() {
           </div>
         </div>
       </div>
+
+      <div className="cta-dock above-tabs">
+        <button className="btn lg full" onClick={() => setAddOpen(true)}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+            <PlusIcon size={18} />
+            기록 추가하기
+          </span>
+        </button>
+      </div>
+
+      {addOpen && <AddRecord onClose={() => setAddOpen(false)} onImported={onImported} />}
 
       {sheetOpen && (
         <Sheet padded={false} label="러닝 기록" onClose={() => setSheetOpen(false)}>
@@ -265,8 +289,14 @@ export default function History() {
                     <div className="stat">
                       <div className="k" style={{color: GRAY_300}}>UV 지수</div>
                       <div className="n xl" style={{color: GREEN_900}}>
-                        {detail.uvIndexAtStart}
-                        <span className="u" style={{color: GRAY_300}}>{uvBand(detail.uvIndexAtStart)}</span>
+                        {detail.uvIndexAtStart == null ? (
+                          <span className="u" style={{color: GRAY_300}}>정보 없음</span>
+                        ) : (
+                          <>
+                            {detail.uvIndexAtStart}
+                            <span className="u" style={{color: GRAY_300}}>{uvBand(detail.uvIndexAtStart)}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

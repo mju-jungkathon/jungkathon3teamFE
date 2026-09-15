@@ -7,7 +7,7 @@ import FingerScan from './FingerScan.jsx'
 import Solution from './Solution.jsx'
 import { XIcon } from '../constants/Icons.jsx'
 import { ROUTINE } from '../data.js'
-import { startRunning, endRunning, completeRunning, listRunningSessions } from '../api/endpoints.js'
+import { startRunning, endRunning, completeRunning, closeStaleSession } from '../api/endpoints.js'
 
 const STEP_LABEL = {
   start: '러닝 준비', tracking: '러닝 진행 중', vitals: '심박수 확인',
@@ -15,16 +15,6 @@ const STEP_LABEL = {
 }
 
 const STEPS = { start: RunStart, tracking: Tracking, vitals: Vitals, scan: FingerScan, solution: Solution }
-
-// 정상 종료 못 하고 남은 IN_PROGRESS 세션(E4090 원인)을 찾아 강제 종료한다.
-// 좀비 세션이라 트래킹 데이터가 없으니 거리 0으로 형식만 맞춰 닫는다.
-async function closeStaleSession() {
-  const { records } = await listRunningSessions()
-  const stale = records.find((r) => r.status === 'IN_PROGRESS')
-  if (!stale) throw new Error('진행 중인 러닝을 찾지 못했어요')
-  const durationSec = Math.max(1, Math.round((Date.now() - new Date(stale.startedAt).getTime()) / 1000))
-  await endRunning(stale.runningSessionId, { durationSec, distanceKm: 0, intensity: 'LOW' })
-}
 
 // 단계별 하단 CTA. 라벨·비활성 여부·다음 단계가 전부 여기 모여 있다.
 function cta(run, setRun, onComplete) {
