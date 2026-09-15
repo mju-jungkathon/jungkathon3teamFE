@@ -35,3 +35,7 @@ export const ChevronRight = (p) => (<Svg {...p}><path d="M9 18l6-6-6-6" /></Svg>
 export const PencilIcon = (p) => (
   <Svg {...p}><path d="M12 20h9" /><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7.5 18.5 3.5 19.5l1-4z" /></Svg>
 )
+export const PlusIcon = (p) => (<Svg {...p}><path d="M12 5v14M5 12h14" /></Svg>)
+export const WatchIcon = (p) => (
+  <Svg {...p}><rect x="7" y="7" width="10" height="10" rx="3" /><path d="M9 3.5h6M9 20.5h6M8 7V4.5M16 7V4.5M8 17v2.5M16 17v2.5" /></Svg>
+)

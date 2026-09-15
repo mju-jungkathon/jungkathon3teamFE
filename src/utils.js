@@ -71,6 +71,15 @@ export function isZombieSession(r) {
   return r.distanceKm === 0 && r.status !== 'COMPLETED'
 }
 
+// 기록 추가하기(직접 입력)의 rPPG 신뢰도 등급. 서버엔 이 필드가 없다 — 러닝 종료 시각과
+// 측정 시각(now) 차이로 클라이언트에서만 판정해 화면 문구/배지를 바꾼다.
+export function heartRateTrustLevel(endedAtIso, now = new Date()) {
+  const mins = (now - new Date(endedAtIso)) / 60000
+  if (mins <= 30) return 'fresh'
+  if (mins <= 180) return 'stale'
+  return 'expired'
+}
+
 // 이번 주부터 거슬러 몇 주 연속으로 뛰었는지(월요일 시작 주 기준).
 export function weeklyStreak(sessions) {
   if (!sessions?.length) return 0

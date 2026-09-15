@@ -40,24 +40,39 @@ export const getHome = () => api.get('/home')
 export const getPrepare = (lat, lng) => api.get('/running-sessions/prepare', { lat, lng })
 export const startStretching = (type = 'PRE_RUN') => api.post('/stretching-sessions', { type })
 
-export const startRunning = (lat, lng, uvIndexAtStart) =>
+// startedAt 생략 시 지금 시각(실시간 러닝). 소급 등록(기록 추가하기)은 과거 시각을 넘긴다.
+// location/uvIndexAtStart는 값이 없으면 필드 자체를 생략한다 — 과거 러닝은 당시 GPS·UV가
+// 없을 수 있고, 없는 값을 임의로 채우면(특히 UV) 회복 가이드가 잘못된 근거로 생성된다.
+export const startRunning = (lat, lng, uvIndexAtStart, startedAt) =>
   api.post('/running-sessions', {
-    startedAt: localDateTime(),
-    location: { lat, lng },
-    uvIndexAtStart,
+    startedAt: startedAt ?? localDateTime(),
+    ...(lat != null && lng != null ? { location: { lat, lng } } : {}),
+    ...(uvIndexAtStart != null ? { uvIndexAtStart } : {}),
   })
 
 // 좀비 IN_PROGRESS 세션(E4090) 복구용 — 목록에서 진행 중 세션을 찾아 강제 종료할 때 쓴다.
 export const listRunningSessions = (range = '30d') => api.get('/running-sessions', { range })
+
+// 정상 종료 못 하고 남은 IN_PROGRESS 세션(E4090 원인)을 찾아 강제 종료한다.
+// 좀비 세션이라 트래킹 데이터가 없으니 거리 0으로 형식만 맞춰 닫는다.
+// RunOverlay(실시간 러닝)와 importRun(소급 등록) 둘 다 새 러닝 시작 전 E4090을 만나면 이걸 쓴다.
+export async function closeStaleSession() {
+  const { records } = await listRunningSessions()
+  const stale = records.find((r) => r.status === 'IN_PROGRESS')
+  if (!stale) throw new Error('진행 중인 러닝을 찾지 못했어요')
+  const durationSec = Math.max(1, Math.round((Date.now() - new Date(stale.startedAt).getTime()) / 1000))
+  await endRunning(stale.runningSessionId, { durationSec, distanceKm: 0, intensity: 'LOW' })
+}
 
 // distanceKm/intensity를 실어 보내면 서버 스냅샷도 같이 갱신된다.
 export const getLive = (sessionId, distanceKm, intensity) =>
   api.get(`/running-sessions/${sessionId}/live`, { distanceKm, intensity })
 
 // idempotent — 중복 호출해도 안전. routePath(선택, 최대 10,000점)는 History 상세 지도용.
-export const endRunning = (sessionId, { durationSec, distanceKm, intensity, routePath }) =>
+// endedAt 생략 시 지금 시각(실시간 러닝 종료). 소급 등록은 워크아웃/입력폼의 과거 종료 시각을 넘긴다.
+export const endRunning = (sessionId, { durationSec, distanceKm, intensity, routePath, endedAt }) =>
   api.post(`/running-sessions/${sessionId}/end`, {
-    endedAt: localDateTime(),
+    endedAt: endedAt ?? localDateTime(),
     durationSec,
     distanceKm,
     intensity,
