@@ -1,0 +1,10 @@
+{
+  "appId": "kr.ac.mju.aftergrow",
+  "appName": "AfterGrow",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

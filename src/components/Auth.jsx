@@ -172,7 +172,7 @@ export default function Auth({ onLogin, onSignup }) {
             </div>
           )}
 
-          <button className="btn lg full" onClick={submit} disabled={busy} style={{backgroundColor: GREEN_250, fontSize: 18}}>
+          <button className="btn lg full" onClick={submit} disabled={busy} style={{backgroundColor: GREEN_250, fontSize: 18, border: 'none'}}>
             {busy ? '처리 중…' : signup ? '회원가입 완료' : '로그인'}
           </button>
           {apiErr && <div className="err" style={{ textAlign: 'center' }}>{apiErr}</div>}
