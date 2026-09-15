@@ -6,6 +6,8 @@ import { fmtElapsed, fmtTodayLabel, fmtClock, currentHourBucket, fmtNextRunLine,
 import { getHome, getUvForecast } from '../api/endpoints.js'
 import { reverseGeocode } from '../kakao.js'
 
+import { GREEN_50, GREEN_200, GREEN_900, GRAY_300, BASE_BLACK } from "../constants/colors.ts"
+
 const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
 
 const HOUR_BUCKET_STEP = 2
@@ -115,7 +117,13 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
     )
   }
 
+  const max = (a, b) => {return a>b?a:b}
+
   const measurement = home?.latestMeasurement
+
+  const max_uv = uv?.hourly?.reduce((max, h) => Math.max(max, h.uv), 0) ?? 0
+  const max_uv_hour = Number(uv?.hourly?.find((h) => h.uv === max_uv)?.hour ?? 0)
+  const max_uv_near_time = `${String(max_uv_hour-HOUR_BUCKET_STEP).padStart(2, '0')}시~${String(max_uv_hour + HOUR_BUCKET_STEP).padStart(2, '0')}시`
 
   return (
     <>
@@ -125,20 +133,29 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
       </div>
 
       <div className="scroll" style={{ paddingBottom: 186 }}>
-        <img
+        {/* <img
           src="https://picsum.photos/seed/aftergrow-seoul-morning-run/780/500"
           alt="아침 러닝"
           style={{ display: 'block', width: '100%', aspectRatio: '16/10', objectFit: 'cover', background: 'var(--soft-cloud)' }}
-        />
+        /> */}
+        <div style={{ display: 'block', width: '100%', aspectRatio: '16/10', objectFit: 'cover', backgroundColor: GREEN_50 }}
+        ></div>
 
         <div style={{ padding: '20px 20px 0' }}>
-          <div className="display" style={{ fontSize: 56 }}>{home?.greeting}</div>
+          <div className="display" style={{ fontSize: 56, color: GREEN_900}}>
+            {/* {home?.greeting} */}
+            TODAY'S VU 6
+            </div>
+
+            <div className="maxuvdisplay" style={{color: BASE_BLACK, marginTop: 8}}>
+              최고 {max_uv} - {max_uv_near_time}는 <br /> 노출을 피하세요.
+            </div>
         </div>
 
         <div style={{ padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
-            <div className="h-lg">자외선 예보</div>
-            <div className="cap-sm">기상청 · {locationLabel ?? '현재 위치 기준'}</div>
+            <div className="h-lg" style={{color: GREEN_900}}>자외선 예보</div>
+            <div className="cap-sm" style={{color: GRAY_300}}>기상청 · {locationLabel ?? '현재 위치 기준'}</div>
           </div>
 
           {uv ? (
@@ -152,9 +169,10 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
                       <div style={{
                         width: '100%',
                         height: Math.round(12 + (h.uv / 11) * 44),
-                        background: isNow ? 'var(--ink)' : h.uv >= 6 ? 'var(--charcoal)' : 'var(--hairline)',
+                        backgroundColor: GREEN_200,
+                        opacity: max(h.uv/max_uv, .1),
                       }} />
-                      <div style={{ font: 'var(--type-caption-sm)', fontSize: 11, color: isNow ? 'var(--ink)' : 'var(--mute)' }}>
+                      <div style={{ font: 'var(--type-caption-sm)', fontSize: 11, color: isNow ? BASE_BLACK : GRAY_300 }}>
                         {isNow ? '지금' : `${h.hour}시`}
                       </div>
                     </div>
@@ -162,10 +180,10 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
                 })}
               </div>
 
-              <div className="soft" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '14px 16px' }}>
-                <div className="cap" style={{ color: 'var(--charcoal)' }}>UV 낮은 시간대</div>
-                <div style={{ font: 'var(--type-body-strong)', color: 'var(--success)' }}>
-                  {lowRanges.length ? `${lowRanges.join(', ')}를 추천해요` : '오늘은 없어요'}
+              <div className="soft" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px' }}>
+                <div className="cap" style={{ color: BASE_BLACK }}>러닝 추천 시간대</div>
+                <div style={{ font: 'var(--type-body-strong)', color: GREEN_900 }}>
+                  {lowRanges.length ? `${lowRanges.join(', ')} 이후` : '오늘은 없어요'}
                 </div>
               </div>
             </>
