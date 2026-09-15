@@ -1,19 +1,33 @@
+import { useState } from 'react'
 import RingGauge from './RingGauge.jsx'
-import { selectHeartRateSource, uploadWatchHeartRate } from '../api/endpoints.js'
-
-// 웹은 HealthKit에 접근할 수 없어 워치 데이터는 목업으로 유지한다(CLAUDE.md 참고).
-// 서버에는 안 올리지만, 화면(Solution 등)에서 계속 같은 값을 보여주도록 run.scanResult에 심어둔다.
-const WATCH_MOCK = { avgBpm: 152, maxBpm: 168, hrvMs: 42 }
+import { selectHeartRateSource, uploadWatchHeartRate, linkAppleHealth } from '../api/endpoints.js'
+import { readLatestWorkoutHeartRate } from '../health.js'
 
 export default function Vitals({ run, setRun }) {
-  // nextStep은 WATCH→FETCH_APPLE_HEALTH, RPPG→RPPG_GUIDE로 고정이라 화면 분기는 그대로 로컬에서 하고,
-  // 이 호출은 서버 쪽 흐름 기록용이라 실패해도 로컬 분기를 막지 않는다(선택값 자체는 저장 안 됨).
-  const pick = (source) => () => {
-    setRun((r) => ({ ...r, source, scanResult: source === 'watch' ? WATCH_MOCK : null }))
+  // idle | loading | done | empty | error
+  const [watch, setWatch] = useState('idle')
+
+  const pick = (source) => async () => {
+    setRun((r) => ({ ...r, source, scanResult: null }))
+    // 선택값 자체는 서버에 저장되지 않는다(흐름 기록용) — 실패해도 로컬 분기를 막지 않는다.
     selectHeartRateSource(run.sessionId, source.toUpperCase()).catch(() => {})
-    // 기록 화면에서도 값이 남아있도록 목업을 실제 측정 기록으로 서버에 남긴다(워치 선택 시에만).
-    if (source === 'watch') uploadWatchHeartRate(run.sessionId, WATCH_MOCK).catch(() => {})
+    if (source !== 'watch') return
+
+    setWatch('loading')
+    try {
+      const hr = await readLatestWorkoutHeartRate()
+      if (!hr) return setWatch('empty')
+
+      setRun((r) => ({ ...r, scanResult: hr }))
+      setWatch('done')
+      linkAppleHealth(true).catch(() => {})
+      uploadWatchHeartRate(run.sessionId, hr).catch(() => {})
+    } catch {
+      setWatch('error')
+    }
   }
+
+  const hr = run.scanResult
 
   return (
     <div style={{ padding: '24px 20px' }}>
@@ -35,15 +49,45 @@ export default function Vitals({ run, setRun }) {
 
       {run.source === 'watch' && (
         <div style={{ marginTop: 22 }}>
-          <div className="soft" style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            <div className="cap-sm">워치 데이터 · 평균 심박수</div>
-            <RingGauge size={160} outerPct={0.55} innerPct={0.75} value={WATCH_MOCK.avgBpm} label={`${WATCH_MOCK.avgBpm} BPM`} />
-            <div className="cap" style={{ color: 'var(--charcoal)' }}>BPM · 최고 {WATCH_MOCK.maxBpm}</div>
-          </div>
-          <div className="row" style={{ borderTop: 'none', borderBottom: '1px solid var(--hairline-soft)' }}>
-            심박변이도(HRV)<span className="v">{WATCH_MOCK.hrvMs}ms</span>
-          </div>
-          <div className="row" style={{ borderTop: 'none' }}>UV 노출<span className="v">지수 6 · 38분</span></div>
+          {watch === 'loading' && (
+            <div className="soft" style={{ padding: 24, textAlign: 'center' }}>
+              <div className="body">건강 앱에서 러닝 기록을 불러오는 중이에요</div>
+            </div>
+          )}
+
+          {watch === 'empty' && (
+            <div className="soft" style={{ padding: 18 }}>
+              <div style={{ font: 'var(--type-body-strong)' }}>최근 러닝 기록이 없어요</div>
+              <div className="body" style={{ marginTop: 6 }}>
+                24시간 안에 기록된 러닝이 없습니다. 카메라 측정으로 진행해보세요
+              </div>
+            </div>
+          )}
+
+          {watch === 'error' && (
+            <div className="soft" style={{ padding: 18 }}>
+              <div style={{ font: 'var(--type-body-strong)' }}>건강 데이터를 읽지 못했어요</div>
+              <div className="body" style={{ marginTop: 6 }}>
+                설정 → 개인정보 보호 및 보안 → 건강에서 AfterGrow 권한을 확인해주세요
+              </div>
+            </div>
+          )}
+
+          {watch === 'done' && hr && (
+            <>
+              <div className="soft" style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                <div className="cap-sm">워치 데이터 · 평균 심박수</div>
+                <RingGauge size={160} outerPct={0.55} innerPct={0.75} value={hr.avgBpm} label={`${hr.avgBpm} BPM`} />
+                <div className="cap" style={{ color: 'var(--charcoal)' }}>BPM · 최고 {hr.maxBpm}</div>
+              </div>
+              {hr.hrvMs != null && (
+                <div className="row" style={{ borderTop: 'none', borderBottom: '1px solid var(--hairline-soft)' }}>
+                  심박변이도(HRV)<span className="v">{hr.hrvMs}ms</span>
+                </div>
+              )}
+              <div className="row" style={{ borderTop: 'none' }}>UV 노출<span className="v">지수 6 · 38분</span></div>
+            </>
+          )}
         </div>
       )}
 
