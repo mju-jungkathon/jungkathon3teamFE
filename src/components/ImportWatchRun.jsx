@@ -52,13 +52,8 @@ export default function ImportWatchRun({ onImported }) {
     setRegistering(true)
     setRegisterError('')
     try {
-      await importWatchWorkout({
-        workout: selected,
-        lat: selected.startLocation?.lat,
-        lng: selected.startLocation?.lng,
-        // 과거 시점 UV는 알 수 없다 — 현재 UV로 채우지 않는다(§8-1).
-        uvIndexAtStart: undefined,
-      })
+      // 좌표·UV 계산은 importRun.js(createAndEndSession)가 공용으로 처리한다 — 여기서 만들지 않는다.
+      await importWatchWorkout({ workout: selected })
       onImported(selected.startedAt)
     } catch (err) {
       setRegisterError(err.message || '등록하지 못했어요. 잠시 후 다시 시도해주세요')
