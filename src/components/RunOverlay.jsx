@@ -5,7 +5,7 @@ import Tracking from './Tracking.jsx'
 import Vitals from './Vitals.jsx'
 import FingerScan from './FingerScan.jsx'
 import Solution from './Solution.jsx'
-import { XIcon } from './Icons.jsx'
+import { XIcon } from '../constants/Icons.jsx'
 import { ROUTINE } from '../data.js'
 import { startRunning, endRunning, completeRunning, listRunningSessions } from '../api/endpoints.js'
 

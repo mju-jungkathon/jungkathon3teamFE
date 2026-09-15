@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import RingGauge from './RingGauge.jsx'
-import { ChevronRight } from './Icons.jsx'
+import { ChevronRight } from '../constants/Icons.jsx'
 import { UV_BY_HOUR, NOW_HOUR_LABEL } from '../data.js'
 import { fmtElapsed, fmtTodayLabel, fmtClock, currentHourBucket, fmtNextRunLine, loadNextRunSuggestion } from '../utils.js'
 import { getHome, getUvForecast } from '../api/endpoints.js'

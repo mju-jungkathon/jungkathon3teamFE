@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import Sheet from './Sheet.jsx'
-import { PencilIcon } from './Icons.jsx'
+import { PencilIcon } from '../constants/Icons.jsx'
 import { GOAL_TYPES, GOAL_TYPE_TO_ENUM, GOAL_TYPE_FROM_ENUM } from '../data.js'
 import { isZombieSession, weeklyStreak } from '../utils.js'
 import { getProfile, updateGoal, updateIntegrations, getRunningSessions, withdrawAccount } from '../api/endpoints.js'
+import { GREEN_100, GREEN_200 } from '../constants/colors.ts'
 
 // 카메라/위치는 서버 값이 아니라 "지금 이 순간" 브라우저의 실제 상태를 봐야 한다(API 명세 §7.6) —
 // 권한 대화상자를 새로 띄우지 않는 permissions.query만 쓴다(getUserMedia는 실제 기능 진입 시에만).
@@ -125,7 +126,7 @@ export default function Profile({ user, goal, onSaveGoal, onLogout }) {
           <div style={{ flex: 'none', position: 'relative', width: 76, height: 76 }}>
             <div
               className="display"
-              style={{ width: 76, height: 76, borderRadius: 'var(--radius-full)', background: 'var(--ink)', color: 'var(--canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}
+              style={{ width: 76, height: 76, borderRadius: 'var(--radius-full)', background: GREEN_200, color: 'var(--canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}
             >
               {name.charAt(0)}
             </div>
