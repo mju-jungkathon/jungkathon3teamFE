@@ -5,8 +5,19 @@ const common = {
   strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
 }
 
-function Svg({ size = 20, children, ...rest }) {
-  return <svg width={size} height={size} {...common} {...rest} aria-hidden="true">{children}</svg>
+// function Svg({ size = 20, children, ...rest }) {
+//   return (
+//     <svg width={size} height={size} {...common} {...rest} aria-hidden="true">{children}</svg>
+// )
+// }
+
+function Svg({ size = 20, children, style, ...rest }) {
+  return (
+    <svg {...common} {...rest} aria-hidden="true"
+         style={{ width: size, height: size, ...style }}>
+      {children}
+    </svg>
+  )
 }
 
 export const HouseIcon = (p) => (

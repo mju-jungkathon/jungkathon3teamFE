@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import Sheet from './Sheet.jsx'
 import RunMap from './RunMap.jsx'
-import { ChevronLeft, ChevronRight, XIcon } from './Icons.jsx'
+import { ChevronLeft, ChevronRight, XIcon } from '../constants/Icons.jsx'
 import { WEEKDAYS } from '../data.js'
 import { monthGrid, fmtPace, fmtClock, fmtDurationKor, uvBand, isZombieSession } from '../utils.js'
 import { getRunningSessions, getRunningSessionDetail, createRecoveryGuide } from '../api/endpoints.js'
+import { BASE_WHITE, GRAY_100, GRAY_300, GREEN_100, GREEN_200, GREEN_250, GREEN_50, GREEN_900, RED_400 } from '../constants/colors.ts'
 
 const SOURCE_LABEL = { WATCH: '워치 연동', RPPG: '손가락 측정' }
 
@@ -86,33 +87,33 @@ export default function History() {
 
   return (
     <>
-      <div className="hdr">
-        <span className="wordmark">기록</span>
+      <div className="hdr" style={{ boxShadow: GRAY_100 }}>
+        <span className="wordmark" style={{fontSize: 20, fontWeight: 'bold'}}>기록</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button className="icon-btn plain" onClick={shift(-1)} aria-label="이전 달"><ChevronLeft size={18} /></button>
-          <span style={{ minWidth: 88, textAlign: 'center', font: 'var(--type-body-strong)' }}>
+          <button className="icon-btn plain" onClick={shift(-1)} aria-label="이전 달"><ChevronLeft size={12} /></button>
+          <span style={{ minWidth: 88, textAlign: 'center', font: 'var(--type-body-strong)',fontSize: 16, fontWeight: 'bold', color: GREEN_900  }}>
             {cal.year}년 {cal.month + 1}월
           </span>
-          <button className="icon-btn plain" onClick={shift(1)} aria-label="다음 달"><ChevronRight size={18} /></button>
+          <button className="icon-btn plain" onClick={shift(1)} aria-label="다음 달"><ChevronRight size={12} /></button>
         </div>
       </div>
 
-      <div className="scroll" style={{ paddingBottom: 88 }}>
+      <div className="scroll" style={{ paddingBottom: 88, boxShadow: GRAY_100 }}>
         {listErr && <div className="body" style={{ padding: 20, color: 'var(--sale)' }}>{listErr}</div>}
 
         <div className="stat-grid c3 bordered-b section">
-          <div className="stat"><div className="k">러닝</div><div className="n">{list.length}회</div></div>
-          <div className="stat"><div className="k">거리</div><div className="n">{list.reduce((a, r) => a + (r.distanceKm || 0), 0).toFixed(1)}km</div></div>
+          <div className="stat"><div className="k" style={{color: GRAY_300}}>러닝</div><div className="n" style={{color: GREEN_900}}>{list.length}회</div></div>
+          <div className="stat"><div className="k" style={{color: GRAY_300}}>거리</div><div className="n" style={{color: GREEN_900}}>{list.reduce((a, r) => a + (r.distanceKm || 0), 0).toFixed(1)}km</div></div>
           <div className="stat">
-            <div className="k">평균 심박</div>
-            <div className="n hr">{bpms.length ? Math.round(bpms.reduce((a, r) => a + r.avgBpm, 0) / bpms.length) : '-'}</div>
+            <div className="k" style={{color: GRAY_300}}>평균 심박</div>
+            <div className="n hr"style={{color: RED_400}}>{bpms.length ? Math.round(bpms.reduce((a, r) => a + r.avgBpm, 0) / bpms.length) : '-'}</div>
           </div>
         </div>
 
         <div style={{ padding: '16px 20px 8px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)' }}>
             {WEEKDAYS.map((w, i) => (
-              <div key={w} style={{ textAlign: 'center', font: 'var(--type-caption-sm)', fontSize: 11, paddingBottom: 8, color: i === 0 ? 'var(--sale)' : 'var(--mute)' }}>
+              <div key={w} style={{ textAlign: 'center', font: 'var(--type-caption-sm)', fontSize: 11, paddingBottom: 8, color: i === 0 ? RED_400 : GRAY_300 }}>
                 {w}
               </div>
             ))}
@@ -132,26 +133,34 @@ export default function History() {
                   style={{ height: 46, border: 'none', background: 'none', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'inherit' }}
                 >
                   <span
-                    className="display"
+                    // className="display"
                     style={{
-                      width: 32, height: 32, borderRadius: 'var(--radius-full)', fontSize: 17,
+                      width: 32, height: 32, borderRadius: 'var(--radius-full)', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: sel ? 'var(--ink)' : 'transparent',
-                      color: sel ? 'var(--canvas)' : r ? 'var(--ink)' : 'var(--stone)',
+                      background: sel ? GREEN_200 : null,
+                      color: sel ? BASE_WHITE : r ? GREEN_250 : GRAY_100,
                     }}
                   >
-                    {day}
+                    <span
+                      style={{
+                        display: 'block', fontSize: 17,
+                        fontFamily: "var(--font-display-campaign)", lineHeight: 1,
+                        transform: 'translateY(1px) translateX(-0.5px)'
+                      }}
+                    >
+                      {day}
+                    </span>
                   </span>
                   <span style={{
                     width: 4, height: 4, borderRadius: 'var(--radius-full)',
-                    background: r && !sel ? (failed ? 'var(--sale)' : 'var(--ink)') : 'transparent',
+                    background: r ? (failed ? RED_400 : GREEN_250) : 'transparent',
                   }} />
                 </button>
               )
             })}
           </div>
 
-          <div className="cap-sm" style={{ textAlign: 'center', padding: '12px 0 20px' }}>
+          <div className="cap-sm" style={{ textAlign: 'center', padding: '12px 0 20px', color: GRAY_300, }}>
             날짜를 눌러 그날의 러닝 기록을 확인하세요
           </div>
         </div>
@@ -164,12 +173,12 @@ export default function History() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', boxShadow: 'var(--elevation-inset-bottom)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   {selected && (
-                    <button className="icon-btn plain" onClick={() => setSelected(null)} aria-label="목록으로" style={{ marginLeft: -8 }}>
+                    <button className="icon-btn plain" onClick={() => setSelected(null)} aria-label="목록으로" style={{ marginLeft: -8, marginRight: 6}}>
                       <ChevronLeft size={18} />
                     </button>
                   )}
                   <div>
-                    <div className="sheet-title">{cal.month + 1}월 {selDay}일</div>
+                    <div className="sheet-title" style={{color: GREEN_900}}>{cal.month + 1}월 {selDay}일</div>
                     <div className="cap-sm" style={{ marginTop: 4 }}>
                       {selected
                         ? (detail ? `${fmtClock(detail.startedAt)} · ${fmtDurationKor(detail.durationSec)}` : '')
@@ -195,10 +204,16 @@ export default function History() {
                           key={s.runningSessionId}
                           className="press"
                           onClick={() => selectSession(s)}
-                          style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '16px 20px', border: 'none', borderTop: '1px solid var(--hairline)', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                          style={{ 
+                            width: '100%', textAlign: 'left', display: 'flex', 
+                            alignItems: 'center', justifyContent: 'space-between', 
+                            gap: 12, padding: '16px 20px', border: 'none', 
+                            borderTop: '1px solid var(--hairline)', background: 'none', 
+                            cursor: 'pointer', fontFamily: 'inherit' 
+                          }}
                         >
                           <div>
-                            <div style={{ font: 'var(--type-body-strong)' }}>{fmtClock(s.startedAt)}</div>
+                            <div style={{ font: 'var(--type-body-strong)', color: GREEN_900 }}>{fmtClock(s.startedAt)}</div>
                             <div className="cap-sm" style={{ marginTop: 4, color: 'var(--mute)' }}>
                               {(s.distanceKm ?? 0).toFixed(2)}km · {fmtDurationKor(s.durationSec)}
                               {failedRun ? ' · 측정 실패' : ` · ${s.avgBpm}BPM`}
@@ -225,24 +240,40 @@ export default function History() {
                   )}
 
                   <div className="stat-grid c2 section">
-                    <div className="stat bordered-b"><div className="k">이동 거리</div><div className="n xl">{(detail.distanceKm ?? 0).toFixed(2)}<span className="u">km</span></div></div>
-                    <div className="stat bordered-b"><div className="k">평균 페이스</div><div className="n xl">{fmtPace(detail.durationSec, detail.distanceKm)}</div></div>
+                    <div className="stat bordered-b">
+                      <div className="k" style={{color: GRAY_300}}>이동 거리</div>
+                      <div className="n xl" style={{color: GREEN_900}}>
+                        {(detail.distanceKm ?? 0).toFixed(2)}
+                        <span className="u" style={{color: GRAY_300}}>km</span>
+                      </div>
+                    </div>
+
+                    <div className="stat bordered-b"><div className="k" style={{color: GRAY_300}}>평균 페이스</div>
+                    <div className="n xl" style={{color: GREEN_900}}>{fmtPace(detail.durationSec, detail.distanceKm)}</div></div>
+
                     <div className="stat">
-                      <div className="k">평균 심박</div>
-                      <div className="n xl hr">
+                      <div className="k" style={{color: GRAY_300}}>평균 심박</div>
+                      <div className="n xl hr" style={{color: RED_400}}>
                         {detail.heartRate?.avgBpm ? detail.heartRate.avgBpm : '측정 실패'}
-                        {detail.heartRate?.avgBpm ? <span className="u">BPM</span> : null}
+                        {detail.heartRate?.avgBpm ? <span className="u" style={{color: GRAY_300}}>BPM</span> : null}
                       </div>
                       {detail.heartRate?.heartRateSource && (
                         <div className="cap-sm" style={{ marginTop: 2 }}>{SOURCE_LABEL[detail.heartRate.heartRateSource] || detail.heartRate.heartRateSource}</div>
                       )}
                     </div>
-                    <div className="stat"><div className="k">UV 지수</div><div className="n xl">{detail.uvIndexAtStart}<span className="u">{uvBand(detail.uvIndexAtStart)}</span></div></div>
+
+                    <div className="stat">
+                      <div className="k" style={{color: GRAY_300}}>UV 지수</div>
+                      <div className="n xl" style={{color: GREEN_900}}>
+                        {detail.uvIndexAtStart}
+                        <span className="u" style={{color: GRAY_300}}>{uvBand(detail.uvIndexAtStart)}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {guide ? (
-                    <div className="soft" style={{ padding: 20, marginTop: 8 }}>
-                      <div className="h-lg">그날의 회복 솔루션</div>
+                    <div className="soft" style={{ padding: 20, marginTop: 8, backgroundColor: GREEN_50 }}>
+                      <div className="h-lg" style={{fontSize: 20, fontWeight: 'bold', color: GREEN_900}}>그날의 회복 솔루션</div>
                       <div className="body" style={{ marginTop: 8 }}>{guide.summaryMessage}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', marginTop: 12 }}>
                         {(guide.actions || []).map((a) => (
@@ -261,8 +292,8 @@ export default function History() {
                 </div>
               ) : null}
 
-              <div style={{ padding: 20 }}>
-                <button className="btn lg full secondary" onClick={close}>닫기</button>
+              <div style={{ padding: 20, backgroundColor: GREEN_50 }}>
+                <button className="btn lg full" style={{backgroundColor: GRAY_100, border: 'none', color: GRAY_300}} onClick={close}>닫기</button>
               </div>
             </>
           )}

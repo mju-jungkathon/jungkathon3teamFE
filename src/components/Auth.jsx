@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { TERMS } from '../data.js'
 import { signup as signupApi, login as loginApi } from '../api/endpoints.js'
+import { BASE_BLACK, GRAY_300, GREEN_100, GREEN_250, GREEN_50, GREEN_900, RED_400 } from '../constants/colors.ts'
 
 const EMPTY_AGREE = { terms: false, privacy: false, marketing: false }
 
@@ -58,14 +59,15 @@ export default function Auth({ onLogin, onSignup }) {
     <>
       <div className="scroll">
         <div style={{ position: 'relative' }}>
-          <img
+          {/* <img
             src="https://picsum.photos/seed/aftergrow-city-runner-dawn/780/720"
             alt="러너"
             style={{ display: 'block', width: '100%', aspectRatio: '13/12', objectFit: 'cover', background: 'var(--soft-cloud)' }}
-          />
+          /> */}
+          <div style={{ display: 'block', width: '100%', aspectRatio: '13/12', objectFit: 'cover',backgroundColor: GREEN_50 }}></div>
           <div style={{ position: 'absolute', left: 20, bottom: 20 }}>
-            <div className="display" style={{ fontSize: 22, letterSpacing: '.06em', color: 'var(--canvas)' }}>AFTERGROW</div>
-            <div className="display" style={{ fontSize: 54, color: 'var(--canvas)', marginTop: 8, whiteSpace: 'pre-line' }}>
+            <div className="display" style={{ fontSize: 22, letterSpacing: '.06em', color: GREEN_250 }}>AFTERGROW</div>
+            <div className="display" style={{ fontSize: 54, color: GREEN_900, marginTop: 8, whiteSpace: 'pre-line' }}>
               {signup ? 'JOIN\nAFTERGROW' : 'WELCOME\nBACK'}
             </div>
           </div>
@@ -81,8 +83,8 @@ export default function Auth({ onLogin, onSignup }) {
                 style={{
                   flex: 1, height: 46, border: 'none', background: 'none', cursor: 'pointer',
                   font: 'var(--type-button-md)',
-                  color: mode === id ? 'var(--ink)' : 'var(--mute)',
-                  boxShadow: mode === id ? 'inset 0 -2px 0 var(--ink)' : 'none',
+                  color: mode === id ? GREEN_900 : GRAY_300,
+                  boxShadow: mode === id ? `inset 0 -2px 0 ${GREEN_900}` : 'none',
                 }}
               >
                 {label}
@@ -90,23 +92,23 @@ export default function Auth({ onLogin, onSignup }) {
             ))}
           </div>
 
-          <div className="body">
+          <div className="body" style={{color: BASE_BLACK}}>
             {signup
-              ? '러닝 기록과 회복 가이드를 저장하려면 계정이 필요해요'
-              : '러닝 데이터와 심박수를 기록하려면 로그인해주세요'}
+              ? `러닝 기록과 회복 가이드를 저장하려면 계정이 필요해요`
+              : `러닝 데이터와 심박수를 기록하려면 ` + `로그인해주세요`}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {signup && (
               <div className="field">
-                <label htmlFor="nickname">닉네임</label>
+                <label htmlFor="nickname" style={{color: BASE_BLACK}}>닉네임</label>
                 <input id="nickname" type="text" placeholder="예: 김러너" value={form.nickname} onChange={set('nickname')} className={err(!nickOk)} />
                 {touched && !nickOk && <div className="err">닉네임을 입력해주세요</div>}
               </div>
             )}
 
             <div className="field">
-              <label htmlFor="email">이메일</label>
+              <label htmlFor="email" style={{color: BASE_BLACK}}>이메일</label>
               <input id="email" type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} className={err(!emailOk)} />
               {touched && !emailOk && <div className="err">올바른 이메일 형식을 입력해주세요</div>}
             </div>
@@ -119,7 +121,7 @@ export default function Auth({ onLogin, onSignup }) {
 
             {signup && (
               <div className="field">
-                <label htmlFor="confirm">비밀번호 확인</label>
+                <label htmlFor="confirm" style={{color: BASE_BLACK}}>비밀번호 확인</label>
                 <input id="confirm" type="password" placeholder="비밀번호 다시 입력" value={form.confirm} onChange={set('confirm')} className={err(!confirmOk)} />
                 {touched && !confirmOk && <div className="err">비밀번호가 일치하지 않아요</div>}
               </div>
@@ -131,9 +133,12 @@ export default function Auth({ onLogin, onSignup }) {
               <button
                 className="press"
                 onClick={() => setAgree(allAgreed ? EMPTY_AGREE : { terms: true, privacy: true, marketing: true })}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', border: 'none', borderTop: '1px solid var(--hairline)', borderBottom: '1px solid var(--hairline-soft)', background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', border: 'none', borderTop: '1px solid var(--hairline)', borderBottom: '1px solid var(--hairline-soft)', background: 'none', cursor: 'pointer', fontFamily: 'inherit', }}
               >
-                <span className={`check ${allAgreed ? 'on' : ''}`}>✓</span>
+                <span 
+                  className={`check ${allAgreed ? 'on' : ''}`}
+                  style={allAgreed ? {backgroundColor: GREEN_900, borderColor: GREEN_900, fontSize: 16} : null}
+                >✓</span>
                 <span style={{ font: 'var(--type-body-strong)' }}>약관 전체 동의</span>
               </button>
 
@@ -147,8 +152,11 @@ export default function Auth({ onLogin, onSignup }) {
                     onClick={() => setAgree((a) => ({ ...a, [t.key]: !a[t.key] }))}
                     style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
                   >
-                    <span className={`check ${agree[t.key] ? 'on' : ''}`}>✓</span>
-                    <span className="cap" style={{ color: 'var(--charcoal)' }}>{t.label}</span>
+                    <span
+                      className={`check ${agree[t.key] ? 'on' : ''}`}
+                      style={agree[t.key] ? {backgroundColor: GREEN_900, borderColor: GREEN_900, fontSize: 16} : null}
+                    >✓</span>
+                    <span className="cap" style={{ color: BASE_BLACK }}>{t.label}</span>
                   </button>
                   <button
                     className="press"
@@ -164,17 +172,17 @@ export default function Auth({ onLogin, onSignup }) {
             </div>
           )}
 
-          <button className="btn lg full" onClick={submit} disabled={busy}>
+          <button className="btn lg full" onClick={submit} disabled={busy} style={{backgroundColor: GREEN_250, fontSize: 18}}>
             {busy ? '처리 중…' : signup ? '회원가입 완료' : '로그인'}
           </button>
           {apiErr && <div className="err" style={{ textAlign: 'center' }}>{apiErr}</div>}
 
-          <div className="cap" style={{ textAlign: 'center' }}>
+          <div className="cap" style={{ textAlign: 'center', color: GRAY_300 }}>
             {signup ? '이미 계정이 있으신가요?' : '계정이 없으신가요?'}
             <button
               className="press"
               onClick={() => switchMode(signup ? 'login' : 'signup')}
-              style={{ border: 'none', background: 'none', font: 'var(--type-caption-md)', color: 'var(--ink)', cursor: 'pointer', padding: '0 0 0 4px', textDecoration: 'underline' }}
+              style={{ border: 'none', background: 'none', font: 'var(--type-caption-md)', color: GREEN_900, cursor: 'pointer', padding: '0 0 0 4px', textDecoration: 'underline' }}
             >
               {signup ? '로그인' : '회원가입'}
             </button>

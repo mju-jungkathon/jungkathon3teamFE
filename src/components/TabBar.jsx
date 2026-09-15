@@ -1,4 +1,4 @@
-import { HouseIcon, CalendarIcon, UserIcon } from './Icons.jsx'
+import { HouseIcon, CalendarIcon, UserIcon } from '../constants/Icons.jsx'
 
 const TABS = [
   { id: 'home', label: '홈', Icon: HouseIcon },
