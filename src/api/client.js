@@ -1,7 +1,7 @@
 // 백엔드 공통 껍데기({ success, data, error })를 벗겨서 data만 돌려주는 얇은 fetch 래퍼.
 // 실패는 전부 ApiError로 던진다 — 화면에서는 err.code로 분기하면 된다(docs/API.md 0.3).
 
-const BASE = (import.meta.env?.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const BASE = ("https://aftergrow.duckdns.org" || '').replace(/\/$/, '')
 const TOKEN_KEY = 'aftergrow.tokens'
 
 export class ApiError extends Error {

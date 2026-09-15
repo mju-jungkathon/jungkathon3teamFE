@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { GOAL_TYPES, GOAL_TYPE_TO_ENUM } from '../data.js'
 import { updateGoal } from '../api/endpoints.js'
 
+import { GREEN_250, GREEN_900, GRAY_100, GRAY_300 } from '../constants/colors.ts'
+
 const freqHint = (n) =>
   n <= 2 ? '가볍게 시작하는 페이스' : n <= 4 ? '가장 많은 러너가 선택하는 빈도' : '회복 관리가 특히 중요한 빈도'
 
@@ -21,28 +23,32 @@ export default function Onboarding({ nickname, onDone }) {
           <div className="display" style={{ fontSize: 52, lineHeight: .92, marginTop: 20, whiteSpace: 'pre-line' }}>
             {`${nickname?.trim() || '러너'}님\n환영해요`}
           </div>
-          <div className="body" style={{ marginTop: 10 }}>목표를 알려주면 러닝 후 회복 가이드를 목표에 맞춰 조정해요</div>
+          <div className="body" style={{ marginTop: 10, color: GREEN_900 }}>목표를 알려주면 러닝 후 회복 가이드를 목표에 맞춰 조정해요</div>
         </div>
 
         <div>
-          <div className="cap">어떤 목적으로 뛰나요</div>
+          <div className="cap" style={{color: GRAY_300}} >어떤 목적으로 뛰나요?</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
             {GOAL_TYPES.map(([name, desc]) => (
               <button
                 key={name}
                 className={`pick ${type === name ? 'on' : ''}`}
                 onClick={() => setType(name)}
-                style={{ minHeight: 86 }}
+                style={{ minHeight: 86, borderColor: type === name ? GREEN_250 : GRAY_100}}
               >
-                <span className="pt">{name}</span>
-                <span className="pd">{desc}</span>
+                <span className="pt" style={{ color: GREEN_900 }}>
+                  {name}
+                </span>
+                <span className="pd" style={{ color: GRAY_300 }}>
+                  {desc}
+                </span>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <div className="cap">일주일에 몇 번 뛸 계획인가요</div>
+          <div className="cap">일주일에 몇 번 뛸 계획인가요?</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
             <div>
               <div className="display" style={{ fontSize: 46, lineHeight: 1 }}>주 {freq}회</div>

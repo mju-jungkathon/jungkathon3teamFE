@@ -50,6 +50,8 @@ function tick(r, overlayOpen) {
   return r
 }
 
+const user = {"nickname": "test", "email": "test@test.test"}
+
 export default function App() {
   const [user, setUser] = useState(null)        // { nickname, email } · null이면 미로그인
   const [pending, setPending] = useState(null)  // 회원가입 직후 온보딩 대기 중인 가입 정보
@@ -201,7 +203,7 @@ export default function App() {
   return (
     <div className="stage">
       <div className="lead">
-        <div className="eyebrow">AFTERGROW PROTOTYPE</div>
+        <div className="eyebrow">AFTERGROW PROTOTYPE</div> 
         <h1>러닝 후, 회복까지</h1>
         <p>로그인 → 홈 → 러닝(전체화면) → 기록 → 프로필. 팝업·타이머 전부 동작합니다.</p>
       </div>
