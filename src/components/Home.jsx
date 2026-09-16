@@ -144,7 +144,7 @@ export default function Home({ run, overlay, onStartRun, onGoHistory }) {
         <div style={{ padding: '20px 20px 0' }}>
           <div className="display" style={{ fontSize: 56, color: GREEN_900}}>
             {/* {home?.greeting} */}
-            TODAY'S VU 6
+            TODAY'S UV 6
             </div>
 
             <div className="maxuvdisplay" style={{color: BASE_BLACK, marginTop: 8}}>
