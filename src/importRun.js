@@ -9,10 +9,50 @@ import {
   uploadWatchHeartRate,
   createRecoveryGuide,
   completeRunning,
+  getUvForecast,
 } from './api/endpoints.js'
-import { intensityFromPace } from './utils.js'
+import { localDateTime } from './api/client.js'
+import { intensityFromPace, hourBucketAt } from './utils.js'
 
-async function createAndEndSession({ startedAt, endedAt, lat, lng, uvIndexAtStart, durationSec, distanceKm, intensity, routePath }) {
+// 서버가 위치를 필수로 요구해(E4001) 언제나 좌표를 채워 보내야 한다. 못 구했을 때 쓰는
+// 최후의 값 — API 명세 예시에 나오는 좌표(서울시청)라 서버가 받아준다는 게 검증돼 있다.
+const FALLBACK_LOCATION = { lat: 37.5665, lng: 126.9780 }
+
+function getCurrentPosition(timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: timeoutMs, maximumAge: 60000 },
+    )
+  })
+}
+
+// 순서: 힌트(워치 워크아웃의 GPS 첫 점) → 기기 현재 위치 → 명세 예시 좌표.
+async function resolveLocation(hint) {
+  if (hint?.lat != null && hint?.lng != null) return { lat: hint.lat, lng: hint.lng }
+  return (await getCurrentPosition()) ?? FALLBACK_LOCATION
+}
+
+// startedAt이 오늘이면 실제 UV를, 아니면 0을 보낸다. 과거 러닝에 "지금" UV를 채우면
+// 회복 가이드가 틀린 근거로 생성되므로(§8-1) 모를 때는 0이 맞다. 조회 실패(E5011 등)도
+// 등록 자체를 막으면 안 되므로 0으로 처리한다.
+async function resolveUvIndexAtStart(startedAtDate, lat, lng) {
+  const isToday = startedAtDate.toDateString() === new Date().toDateString()
+  if (!isToday) return 0
+  try {
+    const { hourly } = await getUvForecast(lat, lng)
+    return hourBucketAt(hourly, startedAtDate)?.uv ?? 0
+  } catch {
+    return 0
+  }
+}
+
+async function createAndEndSession({ startedAt, endedAt, locationHint, durationSec, distanceKm, intensity, routePath }) {
+  const { lat, lng } = await resolveLocation(locationHint)
+  const uvIndexAtStart = await resolveUvIndexAtStart(new Date(startedAt), lat, lng)
+
   let session
   try {
     session = await startRunning(lat, lng, uvIndexAtStart, startedAt)
@@ -36,13 +76,13 @@ async function createAndEndSession({ startedAt, endedAt, lat, lng, uvIndexAtStar
 }
 
 // 2-A: 애플워치 워크아웃 가져오기. 한 번의 사용자 액션으로 전체 시퀀스를 끝까지 진행한다.
-export async function importWatchWorkout({ workout, lat, lng, uvIndexAtStart }) {
+export async function importWatchWorkout({ workout }) {
   const sessionId = await createAndEndSession({
-    startedAt: workout.startedAt,
-    endedAt: workout.endedAt,
-    lat,
-    lng,
-    uvIndexAtStart,
+    // HealthKit 날짜는 UTC(Z) 문자열로 온다 — 서버는 오프셋 없는 로컬 시각을 기대하므로
+    // localDateTime()으로 변환해서 보낸다(그대로 넘기면 시각이 9시간 어긋난다).
+    startedAt: localDateTime(new Date(workout.startedAt)),
+    endedAt: localDateTime(new Date(workout.endedAt)),
+    locationHint: workout.startLocation,
     durationSec: workout.durationSec,
     distanceKm: workout.distanceKm,
     intensity: intensityFromWorkoutPace(workout),
@@ -68,8 +108,9 @@ function intensityFromWorkoutPace(workout) {
 }
 
 // 2-B: 직접 입력. 생성+종료만 하고 심박수는 이후 별도 스텝(측정 또는 건너뛰기)에서 처리한다.
-export async function createManualSession({ startedAt, endedAt, lat, lng, uvIndexAtStart, durationSec, distanceKm, intensity }) {
-  return createAndEndSession({ startedAt, endedAt, lat, lng, uvIndexAtStart, durationSec, distanceKm, intensity })
+// locationHint 없이 호출 → resolveLocation이 기기 현재 위치 → 명세 예시 좌표로 폴백한다.
+export async function createManualSession({ startedAt, endedAt, durationSec, distanceKm, intensity }) {
+  return createAndEndSession({ startedAt, endedAt, durationSec, distanceKm, intensity })
 }
 
 export async function selectRppgForSession(sessionId) {
