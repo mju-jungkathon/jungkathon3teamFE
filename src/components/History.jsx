@@ -322,8 +322,8 @@ export default function History() {
                 </div>
               ) : null}
 
-              <div style={{ padding: 20, backgroundColor: GREEN_50 }}>
-                <button className="btn lg full" style={{backgroundColor: GRAY_100, border: 'none', color: GRAY_300}} onClick={close}>닫기</button>
+              <div style={{ padding: 20, backgroundColor: selected ? GREEN_50 : 'transparent' }}>
+                <button className="btn lg full" style={{ backgroundColor: GRAY_100, border: 'none', color: GRAY_300 }} onClick={close}>닫기</button>
               </div>
             </>
           )}

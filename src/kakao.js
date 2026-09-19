@@ -5,7 +5,7 @@ export function loadKakao() {
   if (kakaoPromise) return kakaoPromise
   kakaoPromise = new Promise((resolve, reject) => {
     if (window.kakao?.maps) return resolve(window.kakao)
-    const key = import.meta.env.VITE_KAKAO_JS_KEY
+    const key = "3f912d07837c4e8faee5ef697d578fe5"
     if (!key) return reject(new Error('VITE_KAKAO_JS_KEY가 설정되지 않았어요'))
     const script = document.createElement('script')
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false&libraries=services`
